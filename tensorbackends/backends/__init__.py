@@ -13,6 +13,13 @@ def get(name):
     except Exception as e:
         raise ValueError(f"Backend {name} cannot be loaded") from e
 
+def isavailable(name):
+    try:
+        get(name)
+        return True
+    except:
+        return False
+
 def register(name):
     def decorator(func):
         _BACKENDS[name] = func
