@@ -23,6 +23,18 @@ the editable mode.
     pip install -e /path/to/the/project/directory
 
 
+Testing
+-------
+In the project directory, run
+
+::
+
+    python -m unittest test
+
+Then same tests will be run for all backends. However, if a backend other than
+``numpy`` is not available, the tests for it will be skipped.
+
+
 Usage
 -----
 To select a backend,
@@ -58,8 +70,8 @@ And its type is accessible at ``tb.tensor``.
     assert issubclass(tb.tensor, tbs.interface.Tensor)
 
 
-Testing
-^^^^^^^
+Writing tests for multiple backends
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 We provide a convenient way to write test cases for multiple backends
 (with ``unittest`` from the Python Standard Library).
 
