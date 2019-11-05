@@ -31,3 +31,6 @@ class Backend:
 
     def copy(self, a):
         raise NotImplementedError()
+
+    def einsvd(self, einstr, a):
+        raise NotImplementedError()

@@ -40,6 +40,25 @@ class NumPyBackend(Backend):
     def copy(self, a):
         return a.copy()
 
+    def einsvd(self, einstr, a):
+        str_a, str_uv = einstr.replace(' ', '').split('->')
+        str_u, str_v = str_uv.split(',')
+        char_i = list(set(str_v) - set(str_a))[0]
+        u, s, vh = la.svd(
+            np.einsum(str_a + '->' + (str_u + str_v).replace(char_i, ''), a)
+            .reshape(-1, np.prod([a.shape[str_a.find(c)] for c in str_v if c != char_i], dtype=int)),
+            full_matrices=False
+        )
+        u = np.einsum(
+            str_u.replace(char_i, '') + char_i + '->' + str_u,
+            u.reshape([a.shape[str_a.find(c)] for c in str_u if c != char_i] + [-1])
+        )
+        vh = np.einsum(
+            char_i + str_v.replace(char_i, '') + '->' + str_v,
+            vh.reshape([-1] + [a.shape[str_a.find(c)] for c in str_v if c != char_i])
+        )
+        return u, s, vh
+
     def __getattr__(self, attr):
         wrap = lambda val: NumPyTensor(val) if isinstance(val, np.ndarray) else val
         unwrap = lambda val: val.tsr if isinstance(val, NumPyTensor) else val

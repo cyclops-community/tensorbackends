@@ -4,6 +4,7 @@ This module implements the ctf backend.
 
 import functools
 
+import numpy as np
 import ctf
 
 from ...interface import Backend
@@ -38,6 +39,15 @@ class CTFBackend(Backend):
 
     def copy(self, a):
         return a.copy()
+
+    def einsvd(self, einstr, a):
+        str_a, str_uv = einstr.replace(' ', '').split('->')
+        str_u, str_v = str_uv.split(',')
+        char_i = list(set(str_v) - set(str_a))[0]
+        shape_u = np.prod([a.shape[str_a.find(c)] for c in str_u if c != char_i])
+        shape_v = np.prod([a.shape[str_a.find(c)] for c in str_v if c != char_i])
+        u, s, vh = a.i(str_a).svd(str_u, str_v)
+        return u, s, vh
 
     def __getattr__(self, attr):
         wrap = lambda val: CTFTensor(val) if isinstance(val, ctf.tensor) else val
