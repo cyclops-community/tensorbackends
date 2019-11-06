@@ -2,8 +2,6 @@
 This module implements the ctf backend.
 """
 
-import functools
-
 import numpy as np
 import ctf
 
@@ -55,7 +53,6 @@ class CTFBackend(Backend):
         try:
             result = getattr(ctf, attr)
             if callable(result):
-                @functools.wraps(result)
                 def wrapped_result(*args, **kwargs):
                     unwrapped_args = tuple(unwrap(v) for v in args)
                     unwrapped_kwargs = {k: unwrap(v) for k, v in kwargs.items()}
@@ -69,6 +66,9 @@ class CTFBackend(Backend):
                     else:
                         wrapped_retval = wrap(retval)
                     return wrapped_retval
+                wrapped_result.__module__ = type(self).__module__
+                wrapped_result.__name__ = attr
+                wrapped_result.__qualname__ = f'{type(self).__qualname__}.{attr}'
                 return wrapped_result
             else:
                 return result
