@@ -2,9 +2,6 @@
 This module implements the ctfview tensor.
 """
 
-import itertools
-import operator
-
 import ctf
 
 from ...interface import Tensor
@@ -55,41 +52,30 @@ class CTFViewTensor(Tensor):
         return CTFViewTensor(self.tsr.astype(dtype), self.indices)
 
     def reshape(self, *newshape):
-        num_minus_one = newshape.count(-1)
-        if num_minus_one > 1:
+        if newshape.count(-1) > 1:
             raise ValueError('At most one -1 can appear in a new shape')
-        elif num_minus_one == 1:
-            newshape[newshape.index(-1)] = self.size // (-indices_utils.prod(newshape))
+        newshape = tuple(s if s != -1 else self.size // -indices_utils.prod(newshape) for s in newshape)
         if self.size != indices_utils.prod(newshape):
             raise ValueError(f'Cannot reshape tensor of size {self.size} into shape {newshape}')
         axes = indices_utils.flatten(self.indices)
         oldshape = tuple(self.tsr.shape[axis] for axis in axes)
-        old_prefix_sizes = [1, *itertools.accumulate(oldshape, func=operator.mul)]
-        new_prefix_sizes = [1, *itertools.accumulate(newshape, func=operator.mul)]
-        steps = [0]
         need_true_reshape = False
-        old_axis, new_axis = 0, 0
-        while True:
-            if old_prefix_sizes[old_axis] == new_prefix_sizes[new_axis]:
-                new_axis += 1
-                old_axis += 1
-                if old_axis == len(old_prefix_sizes) and new_axis == len(new_prefix_sizes):
-                    break # done
-                steps.append(steps[-1] + 1) # move to next new axis
-            elif old_prefix_sizes[old_axis] < new_prefix_sizes[new_axis]:
-                steps[-1] += 1 # fuse this old axis
-                old_axis += 1
-            else: # old_prefix_sizes[old_axis] > new_prefix_sizes[new_axis]
+        groups = []
+        start, end = 0, None
+        for s in newshape:
+            end = start
+            while indices_utils.prod(oldshape[start:end]) < s:
+                end += 1
+            if indices_utils.prod(oldshape[start:end]) > s:
                 need_true_reshape = True
                 break
+            groups.append(tuple(axes[start:end]))
+            start = end
         if need_true_reshape:
             self.match_axes()
             return CTFViewTensor(self.tsr.reshape(*newshape))
         else:
-            newindices = tuple(
-                tuple(axes[start:end]) for start, end in zip(steps, steps[1:])
-            )
-            return CTFViewTensor(self.tsr, newindices)
+            return CTFViewTensor(self.tsr, tuple(groups))
 
     def transpose(self, *axes):
         if len(axes) != self.ndim:
