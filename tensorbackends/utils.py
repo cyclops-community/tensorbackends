@@ -9,7 +9,7 @@ import functools
 from . import backends
 
 
-def test_with_backend(required, optional=[]):
+def test_with_backend(required=['numpy'], optional=['ctf', 'ctfview']):
     def instantiate_test_method(name, method, tb_name):
         new_name = f'{name}_{tb_name}'
         @functools.wraps(method)

@@ -5,7 +5,7 @@ from functools import reduce
 from tensorbackends.utils import test_with_backend
 
 
-@test_with_backend(['numpy'], optional=['ctf'])
+@test_with_backend()
 class TensorAttrTest(unittest.TestCase):
     def test_shape(self, tb):
         for shape in [(2,), (2,3), (2,1,3)]:

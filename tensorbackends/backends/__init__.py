@@ -35,3 +35,8 @@ def _():
 def _():
     from .ctf import CTFBackend
     return CTFBackend()
+
+@register('ctfview')
+def _():
+    from .ctfview import CTFViewBackend
+    return CTFViewBackend()

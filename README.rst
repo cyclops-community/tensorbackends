@@ -11,6 +11,7 @@ Backends
 --------
 - ``numpy``
 - ``ctf``
+- ``ctfview``
 
 
 Installation
