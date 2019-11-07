@@ -82,6 +82,10 @@ class CTFViewTensor(Tensor):
             raise ValueError(f'Axes number do not match ndim: {len(axes)} != {self.ndim}')
         return CTFViewTensor(self.tsr, indices_utils.permute(self.indices, axes))
 
+    def write(self, inds, vals):
+        self.match_indices()
+        self.tsr.write(inds, vals)
+
     def match_indices(self):
         self.indices, self.tsr = indices_utils.apply(self.indices, self.tsr)
 

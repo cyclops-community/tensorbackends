@@ -40,6 +40,9 @@ class NumPyTensor(Tensor):
     def astype(self, dtype):
         return NumPyTensor(self.tsr.astype(dtype))
 
+    def write(self, inds, vals):
+        self.tsr.put(inds, vals)
+
     def __getattr__(self, attr):
         wrap = lambda val: NumPyTensor(val) if isinstance(val, np.ndarray) else val
         unwrap = lambda val: val.tsr if isinstance(val, NumPyTensor) else val

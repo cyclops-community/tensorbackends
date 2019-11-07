@@ -24,3 +24,6 @@ class Tensor:
 
     def astype(self, dtype):
         raise NotImplementedError()
+
+    def write(self, inds, vals):
+        raise NotImplementedError()

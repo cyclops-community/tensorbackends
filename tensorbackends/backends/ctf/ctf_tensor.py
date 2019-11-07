@@ -39,6 +39,9 @@ class CTFTensor(Tensor):
     def astype(self, dtype):
         return CTFTensor(self.tsr.astype(dtype))
 
+    def write(self, inds, vals):
+        self.tsr.write(inds, vals)
+
     def __getattr__(self, attr):
         wrap = lambda val: CTFTensor(val) if isinstance(val, ctf.tensor) else val
         unwrap = lambda val: val.tsr if isinstance(val, CTFTensor) else val
