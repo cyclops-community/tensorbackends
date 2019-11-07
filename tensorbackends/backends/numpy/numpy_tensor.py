@@ -6,10 +6,8 @@ import numpy as np
 import numpy.linalg as la
 
 from ...interface import Tensor
-from ..utils import mimic_operators
 
 
-@mimic_operators('tsr')
 class NumPyTensor(Tensor):
     def __init__(self, tsr):
         self.tsr = tsr
@@ -76,3 +74,62 @@ class NumPyTensor(Tensor):
 
     def __setitem__(self, key, value):
         self.tsr[key] = value.tsr if isinstance(value, np.ndarray) else value
+
+
+def add_unary_operators(*operator_names):
+    def add_unary_operator(operator_name):
+        def method(self):
+            return NumPyTensor(getattr(self.tsr, operator_name)())
+        method.__module__ = NumPyTensor.__module__
+        method.__qualname__ = f'{NumPyTensor.__qualname__}.{operator_name}'
+        method.__name__ = operator_name
+        setattr(NumPyTensor, operator_name, method)
+    for op_name in operator_names:
+        add_unary_operator(op_name)
+
+
+def add_binary_operators(*operator_names):
+    def add_binary_operator(operator_name):
+        def method(self, other):
+            return NumPyTensor(getattr(self.tsr, operator_name)(
+                other.tsr if isinstance(other, NumPyTensor) else other
+            ))
+        method.__module__ = NumPyTensor.__module__
+        method.__qualname__ = f'{NumPyTensor.__qualname__}.{operator_name}'
+        method.__name__ = operator_name
+        setattr(NumPyTensor, operator_name, method)
+    for op_name in operator_names:
+        add_binary_operator(op_name)
+
+
+add_unary_operators(
+    '__pos__',
+    '__neg__',
+    '__abs__',
+)
+
+add_binary_operators(
+    '__add__',
+    '__sub__',
+    '__mul__',
+    '__matmul__',
+    '__truediv__',
+    '__floordiv__',
+    '__pow__',
+
+    '__radd__',
+    '__rsub__',
+    '__rmul__',
+    '__rmatmul__',
+    '__rtruediv__',
+    '__rfloordiv__',
+    '__rpow__',
+
+    '__iadd__',
+    '__isub__',
+    '__imul__',
+    '__imatmul__',
+    '__itruediv__',
+    '__ifloordiv__',
+    '__ipow__',
+)
