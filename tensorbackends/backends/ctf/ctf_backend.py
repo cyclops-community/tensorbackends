@@ -73,4 +73,4 @@ class CTFBackend(Backend):
             else:
                 return result
         except Exception as e:
-            raise ValueError('Failed to designate to ctf') from e
+            raise ValueError(f'Failed to get {attr} from ctf') from e

@@ -88,6 +88,37 @@ class CTFViewTensor(Tensor):
     def match_axes(self):
         self.indices, self.tsr = indices_utils.apply_transpose(self.indices, self.tsr)
 
+    def __getattr__(self, attr):
+        def extract(vtsr):
+            vtsr.match_indices()
+            return vtsr.tsr
+        wrap = lambda val: CTFViewTensor(val) if isinstance(val, ctf.tensor) else val
+        unwrap = lambda val: extract(val)if isinstance(val, CTFViewTensor) else val
+        try:
+            result = getattr(self.tsr, attr)
+            if callable(result):
+                def wrapped_result(*args, **kwargs):
+                    unwrapped_args = tuple(unwrap(v) for v in args)
+                    unwrapped_kwargs = {k: unwrap(v) for k, v in kwargs.items()}
+                    retval = result(*unwrapped_args, **unwrapped_kwargs)
+                    if isinstance(retval, tuple):
+                        wrapped_retval = tuple(wrap(v) for v in retval)
+                    elif isinstance(retval, list):
+                        wrapped_retval = [wrap(v) for v in retval]
+                    elif isinstance(retval, dict):
+                        wrapped_retval = {k: wrap(v) for k, v in retval.items()}
+                    else:
+                        wrapped_retval = wrap(retval)
+                    return wrapped_retval
+                wrapped_result.__module__ = type(self).__module__
+                wrapped_result.__name__ = attr
+                wrapped_result.__qualname__ = f'{type(self).__qualname__}.{attr}'
+                return wrapped_result
+            else:
+                return result
+        except Exception as e:
+            raise ValueError(f'Failed to get {attr} from ctf') from e
+
 
 def add_unary_operators(*operator_names):
     def add_unary_operator(operator_name):

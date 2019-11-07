@@ -66,7 +66,7 @@ class NumPyTensor(Tensor):
             else:
                 return result
         except Exception as e:
-            raise ValueError('Failed to designate to numpy') from e
+            raise ValueError(f'Failed to get {attr} from numpy') from e
 
     def __getitem__(self, key):
         value = self.tsr[key]
