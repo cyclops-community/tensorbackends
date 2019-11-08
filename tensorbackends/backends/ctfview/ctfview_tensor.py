@@ -56,7 +56,7 @@ class CTFViewTensor(Tensor):
             raise ValueError('At most one -1 can appear in a new shape')
         newshape = tuple(s if s != -1 else self.size // -indices_utils.prod(newshape) for s in newshape)
         if self.size != indices_utils.prod(newshape):
-            raise ValueError(f'Cannot reshape tensor of size {self.size} into shape {newshape}')
+            raise ValueError('Cannot reshape tensor of size {} into shape {}'.format(self.size,newshape))
         axes = indices_utils.flatten(self.indices)
         oldshape = tuple(self.tsr.shape[axis] for axis in axes)
         need_true_reshape = False
@@ -79,7 +79,7 @@ class CTFViewTensor(Tensor):
 
     def transpose(self, *axes):
         if len(axes) != self.ndim:
-            raise ValueError(f'Axes number do not match ndim: {len(axes)} != {self.ndim}')
+            raise ValueError('Axes number do not match ndim: {} != {}'.format(len(axes),self.ndim))
         return CTFViewTensor(self.tsr, indices_utils.permute(self.indices, axes))
 
     def write(self, inds, vals):
@@ -116,12 +116,12 @@ class CTFViewTensor(Tensor):
                     return wrapped_retval
                 wrapped_result.__module__ = type(self).__module__
                 wrapped_result.__name__ = attr
-                wrapped_result.__qualname__ = f'{type(self).__qualname__}.{attr}'
+                wrapped_result.__qualname__ = '{}.{}'.format(type(self).__qualname__,attr)
                 return wrapped_result
             else:
                 return result
         except Exception as e:
-            raise ValueError(f'Failed to get {attr} from ctf') from e
+            raise ValueError('Failed to get {} from ctf'.format(attr)) from e
 
 
 def add_unary_operators(*operator_names):
@@ -130,7 +130,7 @@ def add_unary_operators(*operator_names):
             self.match_indices()
             return CTFViewTensor(getattr(self.tsr, operator_name)())
         method.__module__ = CTFViewTensor.__module__
-        method.__qualname__ = f'{CTFViewTensor.__qualname__}.{operator_name}'
+        method.__qualname__ = '{}.{}'.format(CTFViewTensor.__qualname__,operator_name)
         method.__name__ = operator_name
         setattr(CTFViewTensor, operator_name, method)
     for op_name in operator_names:
@@ -147,7 +147,7 @@ def add_binary_operators(*operator_names):
             else:
                 return CTFViewTensor(getattr(self.tsr, operator_name)(other))
         method.__module__ = CTFViewTensor.__module__
-        method.__qualname__ = f'{CTFViewTensor.__qualname__}.{operator_name}'
+        method.__qualname__ = '{}.{}'.format(CTFViewTensor.__qualname__,operator_name)
         method.__name__ = operator_name
         setattr(CTFViewTensor, operator_name, method)
     for op_name in operator_names:

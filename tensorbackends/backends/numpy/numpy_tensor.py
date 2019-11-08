@@ -64,12 +64,12 @@ class NumPyTensor(Tensor):
                     return wrapped_retval
                 wrapped_result.__module__ = type(self).__module__
                 wrapped_result.__name__ = attr
-                wrapped_result.__qualname__ = f'{type(self).__qualname__}.{attr}'
+                wrapped_result.__qualname__ = '{}.{}'.format(type(self).__qualname__,attr)
                 return wrapped_result
             else:
                 return result
         except Exception as e:
-            raise ValueError(f'Failed to get {attr} from numpy') from e
+            raise ValueError('Failed to get {} from numpy'.format(attr)) from e
 
     def __getitem__(self, key):
         value = self.tsr[key]
@@ -84,7 +84,7 @@ def add_unary_operators(*operator_names):
         def method(self):
             return NumPyTensor(getattr(self.tsr, operator_name)())
         method.__module__ = NumPyTensor.__module__
-        method.__qualname__ = f'{NumPyTensor.__qualname__}.{operator_name}'
+        method.__qualname__ = '{}.{}'.format(NumPyTensor.__qualname__,operator_name)
         method.__name__ = operator_name
         setattr(NumPyTensor, operator_name, method)
     for op_name in operator_names:
@@ -98,7 +98,7 @@ def add_binary_operators(*operator_names):
                 other.tsr if isinstance(other, NumPyTensor) else other
             ))
         method.__module__ = NumPyTensor.__module__
-        method.__qualname__ = f'{NumPyTensor.__qualname__}.{operator_name}'
+        method.__qualname__ = '{}.{}'.format(NumPyTensor.__qualname__,operator_name)
         method.__name__ = operator_name
         setattr(NumPyTensor, operator_name, method)
     for op_name in operator_names:
