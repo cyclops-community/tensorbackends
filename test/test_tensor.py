@@ -6,7 +6,7 @@ from tensorbackends.utils import test_with_backend
 
 
 @test_with_backend()
-class TensorAttrTest(unittest.TestCase):
+class TensorTest(unittest.TestCase):
     def test_shape(self, tb):
         for shape in [(2,), (2,3), (2,1,3)]:
             a = tb.empty(shape)
@@ -21,3 +21,8 @@ class TensorAttrTest(unittest.TestCase):
         for shape in [(2,), (2,3), (2,1,3)]:
             a = tb.empty(shape)
             self.assertEqual(a.size, reduce(operator.mul, shape))
+
+    def test_copy(self, tb):
+        a = tb.ones((2,3))
+        b = a.copy()
+        self.assertIsNot(a, b)
