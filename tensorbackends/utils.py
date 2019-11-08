@@ -11,7 +11,7 @@ from . import backends
 
 def test_with_backend(required=['numpy'], optional=['ctf', 'ctfview']):
     def instantiate_test_method(name, method, tb_name):
-        new_name = f'{name}_{tb_name}'
+        new_name = '{}_{}'.format(name,tb_name)
         @functools.wraps(method)
         def new_method(self):
             tb = backends.get(tb_name)
@@ -32,7 +32,7 @@ def test_with_backend(required=['numpy'], optional=['ctf', 'ctfview']):
             for tb_name in optional:
                 new_name, new_method = instantiate_test_method(name, method, tb_name)
                 if not backends.isavailable(tb_name):
-                    new_method = unittest.skip(f'Backend {tb_name} is not availabe')(new_method)
+                    new_method = unittest.skip('Backend {} is not availabe'.format(tb_name))(new_method)
                 setattr(cls, new_name, new_method)
         return cls
     return decrator

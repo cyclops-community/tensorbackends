@@ -88,9 +88,9 @@ class CTFViewBackend(Backend):
                     return wrapped_retval
                 wrapped_result.__module__ = type(self).__module__
                 wrapped_result.__name__ = attr
-                wrapped_result.__qualname__ = f'{type(self).__qualname__}.{attr}'
+                wrapped_result.__qualname__ = '{}.{}'.format(type(self).__qualname__,attr)
                 return wrapped_result
             else:
                 return result
         except Exception as e:
-            raise ValueError(f'Failed to get {attr} from ctf') from e
+            raise ValueError('Failed to get {} from ctf'.format(attr)) from e
