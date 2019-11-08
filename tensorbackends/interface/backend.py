@@ -32,5 +32,5 @@ class Backend:
     def copy(self, a):
         raise NotImplementedError()
 
-    def einsvd(self, einstr, a):
+    def einsvd(self, subscripts, a):
         raise NotImplementedError()

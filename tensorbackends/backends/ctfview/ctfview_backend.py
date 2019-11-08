@@ -46,6 +46,14 @@ class CTFViewBackend(Backend):
             axes = reversed(range(a.ndim))
         return a.transpose(*axes)
 
+    def einsvd(self, subscripts, a):
+        str_a, str_uv = subscripts.replace(' ', '').split('->')
+        str_u, str_v = str_uv.split(',')
+        char_i = next(iter(set(str_v) - set(str_a)))
+        a.match_indices()
+        u, s, vh = a.i(str_a).svd(str_u, str_v)
+        return u, s, vh
+
     def __getattr__(self, attr):
         def extract(vtsr):
             vtsr.match_indices()

@@ -38,10 +38,10 @@ class NumPyBackend(Backend):
     def copy(self, a):
         return a.copy()
 
-    def einsvd(self, einstr, a):
-        str_a, str_uv = einstr.replace(' ', '').split('->')
+    def einsvd(self, subscripts, a):
+        str_a, str_uv = subscripts.replace(' ', '').split('->')
         str_u, str_v = str_uv.split(',')
-        char_i = list(set(str_v) - set(str_a))[0]
+        char_i = next(iter(set(str_v) - set(str_a)))
         u, s, vh = la.svd(
             np.einsum(str_a + '->' + (str_u + str_v).replace(char_i, ''), a)
             .reshape(-1, np.prod([a.shape[str_a.find(c)] for c in str_v if c != char_i], dtype=int)),
