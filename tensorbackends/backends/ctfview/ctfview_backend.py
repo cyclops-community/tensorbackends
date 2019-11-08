@@ -54,6 +54,16 @@ class CTFViewBackend(Backend):
         u, s, vh = a.i(str_a).svd(str_u, str_v)
         return u, s, vh
 
+    def isclose(self, a, b, *, rtol=1e-9, atol=0.0):
+        if isinstance(a, self.tensor):
+            a.match_indices()
+        if isinstance(b, self.tensor):
+            b.match_indices()
+        return abs(a - b) <= atol + rtol * abs(b)
+
+    def allclose(self, a, b, *, rtol=1e-9, atol=0.0):
+        return self.all(self.isclose(a, b, rtol=rtol, atol=atol))
+
     def __getattr__(self, attr):
         def extract(vtsr):
             vtsr.match_indices()

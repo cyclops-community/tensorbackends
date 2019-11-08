@@ -184,4 +184,11 @@ add_binary_operators(
     '__itruediv__',
     '__ifloordiv__',
     '__ipow__',
+
+    '__lt__',
+    '__le__',
+    '__eq__',
+    '__ne__',
+    '__gt__',
+    '__ge__',
 )

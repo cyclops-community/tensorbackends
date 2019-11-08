@@ -44,6 +44,12 @@ class CTFBackend(Backend):
         u, s, vh = a.i(str_a).svd(str_u, str_v)
         return u, s, vh
 
+    def isclose(self, a, b, *, rtol=1e-9, atol=0.0):
+        return abs(a - b) <= atol + rtol * abs(b)
+
+    def allclose(self, a, b, *, rtol=1e-9, atol=0.0):
+        return self.all(self.isclose(a, b, rtol=rtol, atol=atol))
+
     def __getattr__(self, attr):
         wrap = lambda val: CTFTensor(val) if isinstance(val, ctf.tensor) else val
         unwrap = lambda val: val.tsr if isinstance(val, CTFTensor) else val
