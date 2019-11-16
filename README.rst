@@ -19,7 +19,7 @@ Installation
 Considering this package is in development, it is recommended to install it in
 the editable mode.
 
-::
+.. code-block:: python
 
     pip install -e /path/to/the/project/directory
 
@@ -28,7 +28,7 @@ Testing
 -------
 In the project directory, run
 
-::
+.. code-block:: python
 
     python -m unittest test
 
@@ -40,7 +40,7 @@ Usage
 -----
 To select a backend,
 
-::
+.. code-block:: python
 
     import tensorbackends as tbs
     tb = tbs.get('numpy')
@@ -51,21 +51,21 @@ does not exist or cannot be loaded, an error will be thrown.
 Each backend object implements
 `the backend interface <tensorbackends/interface/backend.py>`_.
 
-::
+.. code-block:: python
 
     assert isinstance(tb, tbs.interface.Backend)
 
 The tensor object created by a backend implements
 `the tensor interface <tensorbackends/interface/tensor.py>`_.
 
-::
+.. code-block:: python
 
     a = tb.empty((2,2), dtype=float)
     assert isinstance(a, tbs.interface.Tensor)
 
 And its type is accessible at ``tb.tensor``.
 
-::
+.. code-block:: python
 
     assert isinstance(a, tb.tensor)
     assert issubclass(tb.tensor, tbs.interface.Tensor)
@@ -91,7 +91,7 @@ not available.
 
 Here is an example of a test case class decorated by ``@test_with_backend()``:
 
-::
+.. code-block:: python
 
     import unittest
     from tensorbackends.utils import test_with_backend
@@ -104,7 +104,7 @@ Here is an example of a test case class decorated by ``@test_with_backend()``:
 
 And it is roughly equivalant to
 
-::
+.. code-block:: python
 
     import unittest
     import tensorbackends as tbs
