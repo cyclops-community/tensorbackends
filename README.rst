@@ -19,16 +19,16 @@ Installation
 Considering this package is in development, it is recommended to install it in
 the editable mode.
 
-.. code-block:: python
+.. code-block:: console
 
-    pip install -e /path/to/the/project/directory
+    pip install -e path/to/the/project/directory
 
 
 Testing
 -------
 In the project directory, run
 
-.. code-block:: python
+.. code-block:: console
 
     python -m unittest test
 
