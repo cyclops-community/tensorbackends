@@ -1,12 +1,10 @@
 """
-This module implements some utilities.
+This module implements test utilities.
 """
 
-import inspect
-import unittest
-import functools
+import functools, inspect, unittest
 
-from . import backends
+from .. import backends
 
 
 def test_with_backend(required=['numpy'], optional=['ctf', 'ctfview']):
