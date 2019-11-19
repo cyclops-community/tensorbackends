@@ -40,6 +40,12 @@ class CTFViewBackend(Backend):
     def ones(self, shape, dtype=float):
         return self.tensor(ctf.ones(shape, dtype=dtype))
 
+    def shape(self, a):
+        return a.shape
+
+    def ndim(self, a):
+        return a.ndim
+
     def copy(self, a):
         return a.copy()
 

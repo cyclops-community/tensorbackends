@@ -29,6 +29,12 @@ class Backend:
     def ones(self, shape, dtype=float):
         raise NotImplementedError()
 
+    def shape(self, a):
+        raise NotImplementedError()
+
+    def ndim(self, a):
+        raise NotImplementedError()
+
     def copy(self, a):
         raise NotImplementedError()
 
