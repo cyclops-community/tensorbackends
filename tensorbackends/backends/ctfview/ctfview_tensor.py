@@ -43,11 +43,12 @@ class CTFViewTensor(Tensor):
 
     def __getitem__(self, key):
         self.match_indices()
-        return self.tsr[key]
+        value = self.tsr[key]
+        return CTFViewTensor(value) if isinstance(value, ctf.tensor) else value
 
     def __setitem__(self, key, value):
         self.match_indices()
-        self.tsr[key] = value
+        self.tsr[key] = value.unwrap() if isinstance(value, CTFViewTensor) else value
 
     def copy(self):
         return CTFViewTensor(self.tsr.copy(), self.indices)
@@ -67,7 +68,7 @@ class CTFViewTensor(Tensor):
         groups = []
         start, end = 0, None
         for s in newshape:
-            end = start
+            end = start + 1
             while indices_utils.prod(oldshape[start:end]) < s:
                 end += 1
             if indices_utils.prod(oldshape[start:end]) > s:

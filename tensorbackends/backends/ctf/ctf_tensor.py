@@ -36,6 +36,13 @@ class CTFTensor(Tensor):
     def __str__(self):
         return str(self.tsr)
 
+    def __getitem__(self, key):
+        value = self.tsr[key]
+        return CTFTensor(value) if isinstance(value, ctf.tensor) else value
+
+    def __setitem__(self, key, value):
+        self.tsr[key] = value.unwrap() if isinstance(value, CTFTensor) else value
+
     def copy(self):
         return CTFTensor(self.tsr.copy())
 
@@ -72,13 +79,6 @@ class CTFTensor(Tensor):
                 return result
         except Exception as e:
             raise ValueError('failed to get {} from ctf'.format(attr)) from e
-
-    def __getitem__(self, key):
-        value = self.tsr[key]
-        return CTFTensor(value) if isinstance(value, ctf.tensor) else value
-
-    def __setitem__(self, key, value):
-        self.tsr[key] = value.tsr if isinstance(value, ctf.tensor) else value
 
 
 def add_unary_operators(*operator_names):

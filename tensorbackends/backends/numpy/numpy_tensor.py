@@ -37,6 +37,13 @@ class NumPyTensor(Tensor):
     def __str__(self):
         return str(self.tsr)
 
+    def __getitem__(self, key):
+        value = self.tsr[key]
+        return NumPyTensor(value) if isinstance(value, np.ndarray) else value
+
+    def __setitem__(self, key, value):
+        self.tsr[key] = value.unwrap() if isinstance(value, NumPyTensor) else value
+
     def copy(self):
         return NumPyTensor(np.copy(self.tsr))
 
@@ -73,13 +80,6 @@ class NumPyTensor(Tensor):
                 return result
         except Exception as e:
             raise ValueError('failed to get {} from numpy'.format(attr)) from e
-
-    def __getitem__(self, key):
-        value = self.tsr[key]
-        return NumPyTensor(value) if isinstance(value, np.ndarray) else value
-
-    def __setitem__(self, key, value):
-        self.tsr[key] = value.tsr if isinstance(value, np.ndarray) else value
 
 
 def add_unary_operators(*operator_names):

@@ -20,9 +20,13 @@ class CTFBackend(Backend):
         return CTFTensor
 
     def astensor(self, obj, dtype=None):
-        if isinstance(obj, self.tensor):
+        if isinstance(obj, self.tensor) and dtype is None:
+            return obj
+        elif isinstance(obj, self.tensor) and dtype is not None:
             return obj.astype(dtype)
-        elif isinstance(obj, ctf.tensor):
+        elif isinstance(obj, ctf.tensor) and dtype is None:
+            return self.tensor(obj)
+        elif isinstance(obj, ctf.tensor) and dtype is not None:
             return self.tensor(obj.astype(dtype))
         else:
             return self.tensor(ctf.astensor(obj, dtype=dtype))
@@ -45,9 +49,12 @@ class CTFBackend(Backend):
         ndims = [operand.ndim for operand in operands]
         expr = einstr.parse_einsum(subscripts, ndims)
         result = ctf.einsum(expr.indices_string, *(operand.tsr for operand in operands))
-        newshape = expr.outputs[0].newshape(result.shape)
-        if result.shape != newshape: result = result.reshape(*newshape)
-        return self.tensor(result)
+        if isinstance(result, ctf.tensor):
+            newshape = expr.outputs[0].newshape(result.shape)
+            if result.shape != newshape: result = result.reshape(*newshape)
+            return self.tensor(result)
+        else:
+            return result
 
     def einsvd(self, subscripts, a):
         if not isinstance(a, self.tensor):
