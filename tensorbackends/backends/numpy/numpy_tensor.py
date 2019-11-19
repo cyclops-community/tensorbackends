@@ -69,7 +69,7 @@ class NumPyTensor(Tensor):
             else:
                 return result
         except Exception as e:
-            raise ValueError('Failed to get {} from numpy'.format(attr)) from e
+            raise ValueError('failed to get {} from numpy'.format(attr)) from e
 
     def __getitem__(self, key):
         value = self.tsr[key]

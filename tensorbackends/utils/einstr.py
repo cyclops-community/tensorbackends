@@ -16,31 +16,31 @@ def parse(subscripts):
 def parse_einsum(subscripts, ndims):
     expr = parse(subscripts).match(ndims)
     if len(expr.outputs) != 1:
-        raise ValueError('Too many outputs for einsum: {}'.format(expr.source))
+        raise ValueError('too many outputs for einsum: {}'.format(expr.source))
     output_indices = set(expr.outputs[0])
     if not output_indices.issubset(expr.input_indices):
-        raise ValueError('Output indices should be a subset of input indices for einsum: "{}"'.format(expr.source))
+        raise ValueError('output indices should be a subset of input indices for einsum: "{}"'.format(expr.source))
     if len(output_indices) != len(expr.outputs[0]):
-        raise ValueError('Output indices should not repeat for einsum: "{}"'.format(expr.source))
+        raise ValueError('output indices should not repeat for einsum: "{}"'.format(expr.source))
     return expr
 
 
 def parse_einsvd(subscripts, ndim):
     expr = parse(subscripts).match([ndim])
     if len(expr.inputs) != 1:
-        raise ValueError('Expect one input for einsvd: "{}"'.format(expr.source))
+        raise ValueError('expect one input for einsvd: "{}"'.format(expr.source))
     if len(expr.outputs) != 2:
-        raise ValueError('Expect two outputs for einsvd: "{}"'.format(expr.source))
+        raise ValueError('expect two outputs for einsvd: "{}"'.format(expr.source))
     if len(set(expr.inputs[0])) != len(expr.inputs[0]):
-        raise ValueError('Input indices should not repeat for einsvd: "{}"'.format(expr.source))
+        raise ValueError('input indices should not repeat for einsvd: "{}"'.format(expr.source))
     newindices = expr.output_indices - expr.input_indices
     if len(newindices) != 1:
-        raise ValueError('Expect one new index in outputs for einsvd: "{}"'.format(expr.source))
+        raise ValueError('expect one new index in outputs for einsvd: "{}"'.format(expr.source))
     newindex = newindices.pop()
     if newindex not in expr.outputs[0] or newindex not in expr.outputs[1]:
-        raise ValueError('Expect new index in both outputs for einsvd: "{}"'.format(expr.source))
+        raise ValueError('expect new index in both outputs for einsvd: "{}"'.format(expr.source))
     if len(expr.output_indices) != len(expr.outputs[0]) + len(expr.outputs[1]) - 1:
-        raise ValueError('Only the new index can repeat in the output for einsvd: "{}"'.format(expr.source))
+        raise ValueError('only the new index can repeat in the output for einsvd: "{}"'.format(expr.source))
     return expr
 
 
@@ -70,19 +70,19 @@ class Expression:
         subscripts = re.sub(r'\s', '', subscripts)
         inputs_outputs = subscripts.split('->')
         if len(inputs_outputs) != 2:
-            raise ValueError('Invalid subscripts: "{}"'.format(subscripts))
+            raise ValueError('invalid subscripts: "{}"'.format(subscripts))
         mapping = {}
         input_subscripts = inputs_outputs[0].split(',')
         output_subscripts = inputs_outputs[1].split(',')
         inputs = [InputTerm.parse(s, mapping) for s in input_subscripts]
         outputs = [OutputTerm.parse(s, mapping) for s in output_subscripts]
         if len(mapping) > len(chars):
-            raise ValueError('Too many indices: {} (maximum {})'.format(len(mapping), len(chars)))
+            raise ValueError('too many indices: {} (maximum {})'.format(len(mapping), len(chars)))
         return Expression(inputs, outputs, len(mapping), subscripts)
 
     def match(self, ndims):
         if len(ndims) != len(self.inputs):
-            raise ValueError('Number of operands does not match subscripts "{}": {}'.format(self.source, len(ndims)))
+            raise ValueError('number of operands does not match subscripts "{}": {}'.format(self.source, len(ndims)))
         nindices = self.nindices
         def fresh():
             nonlocal nindices
@@ -129,12 +129,12 @@ class InputTerm:
         while i < len(subscripts):
             if subscripts[i:].startswith('...'):
                 if found_ellipsis:
-                    raise ValueError('Each term can contain at most one ellipsis')
+                    raise ValueError('each term can contain at most one ellipsis')
                 found_ellipsis = True
                 indices.append(Ellipsis)
                 i += 3
             elif subscripts[i] in '()':
-                raise ValueError('Indices fusing is not allowed in input subscripts: "{}"'.format(subscripts))
+                raise ValueError('indices fusing is not allowed in input subscripts: "{}"'.format(subscripts))
             else:
                 indices.append(mapping.setdefault(subscripts[i], len(mapping)))
                 i += 1
@@ -147,14 +147,14 @@ class InputTerm:
             if idx is Ellipsis:
                 count = (ndim - i) - (len(self) - j - 1)
                 if count < 0:
-                    raise ValueError('Indices "{}" do not match ndim: {}'.format(self.source, ndim))
+                    raise ValueError('indices "{}" do not match ndim: {}'.format(self.source, ndim))
                 newindices.extend(fresh() for _ in range(count))
                 i += count
             else:
                 newindices.append(idx)
                 i += 1
         if i != ndim:
-            raise ValueError('Indices "{}" do not match ndim: {}'.format(self.source, ndim))
+            raise ValueError('indices "{}" do not match ndim: {}'.format(self.source, ndim))
         return InputTerm(newindices, self.source)
 
     def __str__(self):
@@ -193,18 +193,18 @@ class OutputTerm:
         while i < len(subscripts):
             if subscripts[i:].startswith('...'):
                 if found_ellipsis:
-                    raise ValueError('Each term can contain at most one ellipsis')
+                    raise ValueError('each term can contain at most one ellipsis')
                 found_ellipsis = True
                 indices.append(Ellipsis)
                 i += 3
             elif subscripts[i] == '(':
                 if start is not None:
-                    raise ValueError('Nested parentheses are not allowed: "{}"'.format(subscripts))
+                    raise ValueError('nested parentheses are not allowed: "{}"'.format(subscripts))
                 start = len(indices)
                 i += 1
             elif subscripts[i] == ')':
                 if start is None:
-                    raise ValueError('Unmatched parentheses: "{}"'.format(subscripts))
+                    raise ValueError('unmatched parentheses: "{}"'.format(subscripts))
                 end = len(indices)
                 if end > start + 1: fusing.append((start, len(indices)))
                 start = None
@@ -213,7 +213,7 @@ class OutputTerm:
                 indices.append(mapping.setdefault(subscripts[i], len(mapping)))
                 i += 1
         if start is not None:
-            raise ValueError('Unmatched parentheses: "{}"'.format(subscripts))
+            raise ValueError('unmatched parentheses: "{}"'.format(subscripts))
         return OutputTerm(indices, fusing, subscripts)
 
     def expand(self, ellipsis):
@@ -226,7 +226,7 @@ class OutputTerm:
             else:
                 newindices.append(idx)
         if ellipsis and ellipsis_position < 0:
-            raise ValueError('Expect ellipsis in output subscripts: "{}"'.format(self.source))
+            raise ValueError('expect ellipsis in output subscripts: "{}"'.format(self.source))
         if ellipsis_position < 0:
             newfusing = list(self.fusing)
         else:
@@ -236,9 +236,9 @@ class OutputTerm:
 
     def newshape(self, shape):
         if Ellipsis in self.indices:
-            raise ValueError('Ellipsis not expanded')
+            raise ValueError('ellipsis not expanded')
         if len(shape) != len(self):
-            raise ValueError('Indices "{}" do not match shape: {}'.format(str(self), shape))
+            raise ValueError('indices "{}" do not match shape: {}'.format(str(self), shape))
         newshape = []
         i = 0
         for start, end in self.fusing:

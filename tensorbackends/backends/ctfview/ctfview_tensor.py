@@ -53,10 +53,10 @@ class CTFViewTensor(Tensor):
 
     def reshape(self, *newshape):
         if newshape.count(-1) > 1:
-            raise ValueError('At most one -1 can appear in a new shape')
+            raise ValueError('at most one -1 can appear in a new shape')
         newshape = tuple(s if s != -1 else self.size // -indices_utils.prod(newshape) for s in newshape)
         if self.size != indices_utils.prod(newshape):
-            raise ValueError('Cannot reshape tensor of size {} into shape {}'.format(self.size,newshape))
+            raise ValueError('cannot reshape tensor of size {} into shape {}'.format(self.size,newshape))
         axes = indices_utils.flatten(self.indices)
         oldshape = tuple(self.tsr.shape[axis] for axis in axes)
         need_true_reshape = False
@@ -79,7 +79,7 @@ class CTFViewTensor(Tensor):
 
     def transpose(self, *axes):
         if len(axes) != self.ndim:
-            raise ValueError('Axes number do not match ndim: {} != {}'.format(len(axes),self.ndim))
+            raise ValueError('axes number do not match ndim: {} != {}'.format(len(axes),self.ndim))
         return CTFViewTensor(self.tsr, indices_utils.permute(self.indices, axes))
 
     def write(self, inds, vals):
@@ -121,7 +121,7 @@ class CTFViewTensor(Tensor):
             else:
                 return result
         except Exception as e:
-            raise ValueError('Failed to get {} from ctf'.format(attr)) from e
+            raise ValueError('failed to get {} from ctf'.format(attr)) from e
 
 
 def add_unary_operators(*operator_names):

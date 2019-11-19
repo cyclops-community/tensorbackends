@@ -49,7 +49,7 @@ class CTFViewBackend(Backend):
 
     def einsum(self, subscripts, *operands):
         if not all(isinstance(operand, self.tensor) for operand in operands):
-            raise TypeError('All operands should be {}'.format(self.tensor.__qualname__))
+            raise TypeError('all operands should be {}'.format(self.tensor.__qualname__))
         for operand in operands:
             operand.match_indices()
         ndims = [operand.ndim for operand in operands]
@@ -61,7 +61,7 @@ class CTFViewBackend(Backend):
 
     def einsvd(self, subscripts, a):
         if not isinstance(a, self.tensor):
-            raise TypeError('The input should be {}'.format(self.tensor.__qualname__))
+            raise TypeError('the input should be {}'.format(self.tensor.__qualname__))
         expr = einstr.parse_einsvd(subscripts, a.ndim)
         a.match_indices()
         u, s, vh = a.tsr.i(expr.inputs[0].indices_string).svd(
@@ -109,4 +109,4 @@ class CTFViewBackend(Backend):
             else:
                 return result
         except Exception as e:
-            raise ValueError('Failed to get {} from ctf'.format(attr)) from e
+            raise ValueError('failed to get {} from ctf'.format(attr)) from e

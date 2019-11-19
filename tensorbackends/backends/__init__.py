@@ -7,11 +7,11 @@ _BACKENDS = {}
 
 def get(name):
     if name not in _BACKENDS:
-        raise ValueError("Backend {} does not exsit".format(name))
+        raise ValueError('backend {} does not exsit'.format(name))
     try:
         return  _BACKENDS[name]()
     except Exception as e:
-        raise ValueError("Backend {} cannot be loaded".format(name)) from e
+        raise ValueError('backend {} cannot be loaded'.format(name)) from e
 
 def isavailable(name):
     try:

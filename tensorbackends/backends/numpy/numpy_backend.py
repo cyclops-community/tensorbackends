@@ -43,7 +43,7 @@ class NumPyBackend(Backend):
 
     def einsum(self, subscripts, *operands):
         if not all(isinstance(operand, self.tensor) for operand in operands):
-            raise TypeError('All operands should be {}'.format(self.tensor.__qualname__))
+            raise TypeError('all operands should be {}'.format(self.tensor.__qualname__))
         ndims = [operand.ndim for operand in operands]
         expr = einstr.parse_einsum(subscripts, ndims)
         result = np.einsum(expr.indices_string, *(operand.tsr for operand in operands))
@@ -53,7 +53,7 @@ class NumPyBackend(Backend):
 
     def einsvd(self, subscripts, a):
         if not isinstance(a, self.tensor):
-            raise TypeError('The input should be {}'.format(self.tensor.__qualname__))
+            raise TypeError('the input should be {}'.format(self.tensor.__qualname__))
         expr = einstr.parse_einsvd(subscripts, a.ndim)
         newindex = (expr.output_indices - expr.input_indices).pop()
         prod = lambda iterable: functools.reduce(operator.mul, iterable, 1)
@@ -112,4 +112,4 @@ class NumPyBackend(Backend):
             else:
                 return result
         except Exception as e:
-            raise ValueError('Failed to get {} from numpy'.format(attr)) from e
+            raise ValueError('failed to get {} from numpy'.format(attr)) from e
