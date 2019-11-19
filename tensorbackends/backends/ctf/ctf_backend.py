@@ -71,7 +71,7 @@ class CTFBackend(Backend):
 
     def __getattr__(self, attr):
         wrap = lambda val: CTFTensor(val) if isinstance(val, ctf.tensor) else val
-        unwrap = lambda val: val.tsr if isinstance(val, CTFTensor) else val
+        unwrap = lambda val: val.unwrap() if isinstance(val, CTFTensor) else val
         try:
             result = getattr(ctf, attr)
             if callable(result):

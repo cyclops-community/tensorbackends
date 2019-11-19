@@ -88,7 +88,7 @@ class NumPyBackend(Backend):
 
     def __getattr__(self, attr):
         wrap = lambda val: NumPyTensor(val) if isinstance(val, np.ndarray) else val
-        unwrap = lambda val: val.tsr if isinstance(val, NumPyTensor) else val
+        unwrap = lambda val: val.unwrap() if isinstance(val, NumPyTensor) else val
         try:
             result = getattr(np, attr) if hasattr(np, attr) else getattr(la, attr)
             if callable(result):

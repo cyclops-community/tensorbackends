@@ -28,6 +28,9 @@ class NumPyTensor(Tensor):
     def dtype(self):
         return self.tsr.dtype
 
+    def unwrap(self):
+        return self.tsr
+
     def __repr__(self):
         return repr(self.tsr)
 
@@ -45,7 +48,7 @@ class NumPyTensor(Tensor):
 
     def __getattr__(self, attr):
         wrap = lambda val: NumPyTensor(val) if isinstance(val, np.ndarray) else val
-        unwrap = lambda val: val.tsr if isinstance(val, NumPyTensor) else val
+        unwrap = lambda val: val.unwrap() if isinstance(val, NumPyTensor) else val
         try:
             result = getattr(self.tsr, attr)
             if callable(result):

@@ -29,6 +29,10 @@ class CTFViewTensor(Tensor):
     def dtype(self):
         return self.tsr.dtype
 
+    def unwrap(self):
+        self.match_indices()
+        return self.tsr
+
     def __repr__(self):
         self.match_indices()
         return repr(self.tsr)
@@ -93,11 +97,8 @@ class CTFViewTensor(Tensor):
         self.indices, self.tsr = indices_utils.apply_transpose(self.indices, self.tsr)
 
     def __getattr__(self, attr):
-        def extract(vtsr):
-            vtsr.match_indices()
-            return vtsr.tsr
         wrap = lambda val: CTFViewTensor(val) if isinstance(val, ctf.tensor) else val
-        unwrap = lambda val: extract(val)if isinstance(val, CTFViewTensor) else val
+        unwrap = lambda val: val.unwrap() if isinstance(val, CTFViewTensor) else val
         try:
             result = getattr(self.tsr, attr)
             if callable(result):

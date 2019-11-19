@@ -81,11 +81,8 @@ class CTFViewBackend(Backend):
         return self.all(self.isclose(a, b, rtol=rtol, atol=atol))
 
     def __getattr__(self, attr):
-        def extract(vtsr):
-            vtsr.match_indices()
-            return vtsr.tsr
         wrap = lambda val: CTFViewTensor(val) if isinstance(val, ctf.tensor) else val
-        unwrap = lambda val: extract(val) if isinstance(val, CTFViewTensor) else val
+        unwrap = lambda val: val.unwrap() if isinstance(val, CTFViewTensor) else val
         try:
             result = getattr(ctf, attr)
             if callable(result):

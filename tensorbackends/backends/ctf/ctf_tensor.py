@@ -27,6 +27,9 @@ class CTFTensor(Tensor):
     def dtype(self):
         return self.tsr.dtype
 
+    def unwrap(self):
+        return self.tsr
+
     def __repr__(self):
         return repr(self.tsr)
 
@@ -44,7 +47,7 @@ class CTFTensor(Tensor):
 
     def __getattr__(self, attr):
         wrap = lambda val: CTFTensor(val) if isinstance(val, ctf.tensor) else val
-        unwrap = lambda val: val.tsr if isinstance(val, CTFTensor) else val
+        unwrap = lambda val: val.unwrap() if isinstance(val, CTFTensor) else val
         try:
             result = getattr(self.tsr, attr)
             if callable(result):

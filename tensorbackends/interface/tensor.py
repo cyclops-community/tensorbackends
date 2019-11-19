@@ -19,6 +19,9 @@ class Tensor:
     def dtype(self):
         raise NotImplementedError()
 
+    def unwrap(self):
+        raise NotImplementedError()
+
     def copy(self):
         raise NotImplementedError()
 
