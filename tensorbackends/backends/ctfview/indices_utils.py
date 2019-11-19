@@ -1,6 +1,4 @@
-import itertools
-import functools
-import operator
+import itertools, functools, operator
 
 
 def identity(ndim):

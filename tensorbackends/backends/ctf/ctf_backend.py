@@ -6,6 +6,7 @@ import numpy as np
 import ctf
 
 from ...interface import Backend
+from ...utils import einstr
 from .ctf_tensor import CTFTensor
 
 
@@ -38,11 +39,29 @@ class CTFBackend(Backend):
     def copy(self, a):
         return a.copy()
 
+    def einsum(self, subscripts, *operands):
+        if not all(isinstance(operand, self.tensor) for operand in operands):
+            raise TypeError('All operands should be {}'.format(self.tensor.__qualname__))
+        ndims = [operand.ndim for operand in operands]
+        expr = einstr.parse_einsum(subscripts, ndims)
+        result = ctf.einsum(expr.indices_string, *(operand.tsr for operand in operands))
+        newshape = expr.outputs[0].newshape(result.shape)
+        if result.shape != newshape: result = result.reshape(*newshape)
+        return self.tensor(result)
+
     def einsvd(self, subscripts, a):
-        str_a, str_uv = subscripts.replace(' ', '').split('->')
-        str_u, str_v = str_uv.split(',')
-        u, s, vh = a.i(str_a).svd(str_u, str_v)
-        return u, s, vh
+        if not isinstance(a, self.tensor):
+            raise TypeError('The input should be {}'.format(self.tensor.__qualname__))
+        expr = einstr.parse_einsvd(subscripts, a.ndim)
+        u, s, vh = a.tsr.i(expr.inputs[0].indices_string).svd(
+            expr.outputs[0].indices_string,
+            expr.outputs[1].indices_string
+        )
+        u_newshape = expr.outputs[0].newshape(u.shape)
+        vh_newshape = expr.outputs[1].newshape(vh.shape)
+        if u_newshape != u.shape: u = u.reshape(*u_newshape)
+        if vh_newshape != vh.shape: vh = vh.reshape(*vh_newshape)
+        return self.tensor(u), self.tensor(s), self.tensor(vh)
 
     def isclose(self, a, b, *, rtol=1e-9, atol=0.0):
         return abs(a - b) <= atol + rtol * abs(b)

@@ -2,10 +2,13 @@
 This module implements the numpy backend.
 """
 
+import itertools, functools, operator
+
 import numpy as np
 import numpy.linalg as la
 
 from ...interface import Backend
+from ...utils import einstr
 from .numpy_tensor import NumPyTensor
 
 
@@ -38,24 +41,39 @@ class NumPyBackend(Backend):
     def copy(self, a):
         return a.copy()
 
+    def einsum(self, subscripts, *operands):
+        if not all(isinstance(operand, self.tensor) for operand in operands):
+            raise TypeError('All operands should be {}'.format(self.tensor.__qualname__))
+        ndims = [operand.ndim for operand in operands]
+        expr = einstr.parse_einsum(subscripts, ndims)
+        result = np.einsum(expr.indices_string, *(operand.tsr for operand in operands))
+        newshape = expr.outputs[0].newshape(result.shape)
+        result = result.reshape(*newshape)
+        return self.tensor(result)
+
     def einsvd(self, subscripts, a):
-        str_a, str_uv = subscripts.replace(' ', '').split('->')
-        str_u, str_v = str_uv.split(',')
-        char_i = next(iter(set(str_v) - set(str_a)))
-        u, s, vh = la.svd(
-            np.einsum(str_a + '->' + (str_u + str_v).replace(char_i, ''), a)
-            .reshape(-1, np.prod([a.shape[str_a.find(c)] for c in str_v if c != char_i], dtype=int)),
-            full_matrices=False
-        )
-        u = np.einsum(
-            str_u.replace(char_i, '') + char_i + '->' + str_u,
-            u.reshape([a.shape[str_a.find(c)] for c in str_u if c != char_i] + [-1])
-        )
-        vh = np.einsum(
-            char_i + str_v.replace(char_i, '') + '->' + str_v,
-            vh.reshape([-1] + [a.shape[str_a.find(c)] for c in str_v if c != char_i])
-        )
-        return u, s, vh
+        if not isinstance(a, self.tensor):
+            raise TypeError('The input should be {}'.format(self.tensor.__qualname__))
+        expr = einstr.parse_einsvd(subscripts, a.ndim)
+        newindex = (expr.output_indices - expr.input_indices).pop()
+        prod = lambda iterable: functools.reduce(operator.mul, iterable, 1)
+        axis_of_index = {index: axis for axis, index in enumerate(expr.inputs[0])}
+        u_axes_from_a = [axis_of_index[index] for index in expr.outputs[0] if index != newindex]
+        vh_axes_from_a = [axis_of_index[index] for index in expr.outputs[1] if index != newindex]
+        # form matrix of a
+        a_matrix_axes = [*u_axes_from_a, *vh_axes_from_a]
+        a_matrix_shape = (prod(a.shape[axis] for axis in u_axes_from_a), -1)
+        a_matrix = a.transpose(*a_matrix_axes).reshape(*a_matrix_shape)
+        u, s, vh = la.svd(a_matrix, full_matrices=False)
+        # form u
+        u = u.reshape(*(a.shape[axis] for axis in u_axes_from_a), len(s))
+        u = np.moveaxis(u, -1, expr.outputs[0].find(newindex))
+        u = u.reshape(*expr.outputs[0].newshape(u.shape))
+        # form vh
+        vh = vh.reshape(len(s), *(a.shape[axis] for axis in vh_axes_from_a))
+        vh = np.moveaxis(vh, 0, expr.outputs[1].find(newindex))
+        vh = vh.reshape(*expr.outputs[1].newshape(vh.shape))
+        return self.tensor(u), self.tensor(s), self.tensor(vh)
 
     def isclose(self, a, b, *, rtol=1e-9, atol=0.0):
         a = b.tsr if isinstance(b, NumPyTensor) else b

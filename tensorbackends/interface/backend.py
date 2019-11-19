@@ -32,6 +32,9 @@ class Backend:
     def copy(self, a):
         raise NotImplementedError()
 
+    def einsum(self, subscripts, *operands):
+        raise NotImplementedError()
+
     def einsvd(self, subscripts, a):
         raise NotImplementedError()
 
