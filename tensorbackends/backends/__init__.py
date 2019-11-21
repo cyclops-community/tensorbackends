@@ -9,7 +9,7 @@ def get(name):
     if name not in _BACKENDS:
         raise ValueError('backend {} does not exsit'.format(name))
     try:
-        return  _BACKENDS[name]()
+        return _BACKENDS[name]()
     except Exception as e:
         raise ValueError('backend {} cannot be loaded'.format(name)) from e
 

@@ -9,7 +9,7 @@ from .. import backends
 
 def test_with_backend(required=['numpy'], optional=['ctf', 'ctfview']):
     def instantiate_test_method(name, method, tb_name):
-        new_name = '{}_{}'.format(name,tb_name)
+        new_name = '{}_{}'.format(name, tb_name)
         @functools.wraps(method)
         def new_method(self):
             tb = backends.get(tb_name)

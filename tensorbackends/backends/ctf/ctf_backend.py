@@ -2,7 +2,6 @@
 This module implements the ctf backend.
 """
 
-import numpy as np
 import ctf
 
 from ...interface import Backend
@@ -103,7 +102,7 @@ class CTFBackend(Backend):
                     return wrapped_retval
                 wrapped_result.__module__ = type(self).__module__
                 wrapped_result.__name__ = attr
-                wrapped_result.__qualname__ = '{}.{}'.format(type(self).__qualname__,attr)
+                wrapped_result.__qualname__ = '{}.{}'.format(type(self).__qualname__, attr)
                 return wrapped_result
             else:
                 return result

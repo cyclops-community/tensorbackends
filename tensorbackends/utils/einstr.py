@@ -3,7 +3,6 @@ This module implements einstr utilities.
 """
 
 import re, string, itertools, functools, operator
-from collections import namedtuple
 
 
 chars = string.ascii_letters
