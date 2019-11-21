@@ -6,7 +6,7 @@ import re, string, itertools, functools, operator
 from collections import namedtuple
 
 
-chars = string.ascii_letters + string.digits
+chars = string.ascii_letters
 
 
 def parse(subscripts):

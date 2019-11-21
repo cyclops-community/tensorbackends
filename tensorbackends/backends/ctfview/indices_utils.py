@@ -91,6 +91,7 @@ def expand_einsum(expr, inputs_indices, inputs_shapes):
         new_input_term = expand_input_term(term, indices, shape)
         if new_input_term is None: return None
         newinputs.append(new_input_term)
+    if nindices > len(einstr.chars): return None
     newoutputs = [expand_output_term(expr.outputs[0])]
     return einstr.Expression(newinputs, newoutputs, nindices, expr.source)
 
