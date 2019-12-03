@@ -2,10 +2,19 @@
 This module implements backend selection.
 """
 
+from ..interface import Backend
 
 _BACKENDS = {}
 
-def get(name):
+def get(obj):
+    if isinstance(obj, Backend):
+        return obj
+    else:
+        return get_by_name(obj)
+
+def get_by_name(name):
+    if not isinstance(name, str):
+        raise TypeError('backend name should be a string, but {} is {}'.format(name, type(name).__qualname__))
     if name not in _BACKENDS:
         raise ValueError('backend {} does not exsit'.format(name))
     try:
