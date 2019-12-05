@@ -14,6 +14,11 @@ class CTFViewTensor(Tensor):
         self.indices = indices_utils.identity(tsr.ndim) if indices is None else indices
 
     @property
+    def backend(self):
+        from . import CTFViewBackend
+        return CTFViewBackend()
+
+    @property
     def shape(self):
         return indices_utils.shape(self.indices, self.tsr)
 

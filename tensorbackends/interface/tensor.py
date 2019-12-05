@@ -4,6 +4,10 @@ This module defines the interface of a tensor.
 
 class Tensor:
     @property
+    def backend(self):
+        raise NotImplementedError()
+
+    @property
     def shape(self):
         raise NotImplementedError()
 

@@ -12,6 +12,11 @@ class CTFTensor(Tensor):
         self.tsr = tsr
 
     @property
+    def backend(self):
+        from . import CTFBackend
+        return CTFBackend()
+
+    @property
     def shape(self):
         return self.tsr.shape
 

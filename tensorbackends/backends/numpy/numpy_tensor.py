@@ -12,6 +12,11 @@ class NumPyTensor(Tensor):
         self.tsr = tsr
 
     @property
+    def backend(self):
+        from . import NumPyBackend
+        return NumPyBackend()
+
+    @property
     def shape(self):
         return self.tsr.shape
 

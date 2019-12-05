@@ -7,6 +7,10 @@ from tensorbackends.utils import test_with_backend
 
 @test_with_backend()
 class TensorTest(unittest.TestCase):
+    def test_backend(self, tb):
+        tsr = tb.empty(2)
+        self.assertEqual(tsr.backend, tb)
+
     def test_shape(self, tb):
         for shape in [(2,), (2,3), (2,1,3)]:
             a = tb.empty(shape)
