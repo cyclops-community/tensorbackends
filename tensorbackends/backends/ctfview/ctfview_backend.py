@@ -16,6 +16,14 @@ class CTFViewBackend(Backend):
         return 'ctfview'
 
     @property
+    def nproc(self):
+        return ctf.comm().np()
+
+    @property
+    def rank(self):
+        return ctf.comm().rank()
+
+    @property
     def tensor(self):
         return CTFViewTensor
 

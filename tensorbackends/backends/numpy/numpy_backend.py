@@ -18,6 +18,14 @@ class NumPyBackend(Backend):
         return 'numpy'
 
     @property
+    def nproc(self):
+        return 1
+
+    @property
+    def rank(self):
+        return 0
+
+    @property
     def tensor(self):
         return NumPyTensor
 

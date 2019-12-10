@@ -14,6 +14,14 @@ class Backend:
         raise NotImplementedError()
 
     @property
+    def nproc(self):
+        raise NotImplementedError()
+
+    @property
+    def rank(self):
+        raise NotImplementedError()
+
+    @property
     def tensor(self):
         raise NotImplementedError()
 
