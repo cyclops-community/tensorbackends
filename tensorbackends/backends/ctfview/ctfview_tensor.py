@@ -73,14 +73,19 @@ class CTFViewTensor(Tensor):
         groups = []
         start, end = 0, None
         for s in newshape:
-            end = start + 1
-            while indices_utils.prod(oldshape[start:end]) < s:
-                end += 1
-            if indices_utils.prod(oldshape[start:end]) > s:
-                need_true_reshape = True
-                break
-            groups.append(tuple(axes[start:end]))
-            start = end
+            if start >= len(oldshape) and s == 1:
+                groups.append(tuple())
+            else: # start < len(oldshape)
+                fused_size = oldshape[start]
+                end = start + 1
+                while fused_size < s or end < len(oldshape) and oldshape[end] == 1:
+                    fused_size *= oldshape[end]
+                    end += 1
+                if fused_size > s:
+                    need_true_reshape = True
+                    break
+                groups.append(tuple(axes[start:end]))
+                start = end
         if need_true_reshape:
             self.match_axes()
             return CTFViewTensor(self.tsr.reshape(*newshape))

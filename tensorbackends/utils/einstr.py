@@ -205,7 +205,7 @@ class OutputTerm:
                 if start is None:
                     raise ValueError('unmatched parentheses: "{}"'.format(subscripts))
                 end = len(indices)
-                if end > start + 1: fusing.append((start, len(indices)))
+                fusing.append((start, len(indices)))
                 start = None
                 i += 1
             else:

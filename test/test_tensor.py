@@ -30,3 +30,10 @@ class TensorTest(unittest.TestCase):
         a = tb.ones((2,3))
         b = a.copy()
         self.assertIsNot(a, b)
+        self.assertTrue(tb.allclose(b, 1))
+
+    def test_reshape(self, tb):
+        a = tb.empty((4,4))
+        for shape in [(4,1,4,1,1), (2,2,2,2),(16,),(1,8,2)]:
+            with self.subTest(shape=shape):
+                self.assertEqual(a.reshape(*shape).shape, shape)
