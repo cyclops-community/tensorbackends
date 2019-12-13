@@ -52,6 +52,9 @@ class Backend:
     def einsvd(self, subscripts, a):
         raise NotImplementedError()
 
+    def einsumsvd(self, subscripts, *operands):
+        raise NotImplementedError()
+
     def isclose(self, a, b, *, rtol=1e-9, atol=0.0):
         raise NotImplementedError()
 

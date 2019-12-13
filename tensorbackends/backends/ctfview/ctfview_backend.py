@@ -70,35 +70,20 @@ class CTFViewBackend(Backend):
             raise TypeError('all operands should be {}'.format(self.tensor.__qualname__))
         ndims = [operand.ndim for operand in operands]
         expr = einstr.parse_einsum(subscripts, ndims)
-        inputs_indices = [operand.indices for operand in operands]
-        inputs_shapes = [operand.tsr.shape for operand in operands]
-        expanded_expr = indices_utils.expand_einsum(expr, inputs_indices, inputs_shapes)
-        if expanded_expr is not None:
-            result = ctf.einsum(expanded_expr.indices_string, *(operand.tsr for operand in operands))
-            if isinstance(result, ctf.tensor):
-                newshape = expanded_expr.outputs[0].newshape(result.shape)
-                return self.tensor(result).reshape(*newshape)
-            else:
-                return result
-        else:
-            result = ctf.einsum(expr.indices_string, *(operand.unwrap() for operand in operands))
-            if isinstance(result, ctf.tensor):
-                newshape = expr.outputs[0].newshape(result.shape)
-                return self.tensor(result).reshape(*newshape)
-            else:
-                return result
+        return self._einsum(expr, operands)
 
     def einsvd(self, subscripts, a):
         if not isinstance(a, self.tensor):
             raise TypeError('the input should be {}'.format(self.tensor.__qualname__))
         expr = einstr.parse_einsvd(subscripts, a.ndim)
-        u, s, vh = a.unwrap().i(expr.inputs[0].indices_string).svd(
-            expr.outputs[0].indices_string,
-            expr.outputs[1].indices_string,
-        )
-        u_newshape = expr.outputs[0].newshape(u.shape)
-        vh_newshape = expr.outputs[1].newshape(vh.shape)
-        return self.tensor(u).reshape(*u_newshape), self.tensor(s), self.tensor(vh).reshape(*vh_newshape)
+        return self._einsvd(expr, a)
+
+    def einsumsvd(self, subscripts, *operands):
+        if not all(isinstance(operand, self.tensor) for operand in operands):
+            raise TypeError('all operands should be {}'.format(self.tensor.__qualname__))
+        ndims = [operand.ndim for operand in operands]
+        expr = einstr.parse_einsumsvd(subscripts, ndims)
+        return self._einsumsvd(expr, operands)
 
     def isclose(self, a, b, *, rtol=1e-9, atol=0.0):
         if isinstance(a, self.tensor): a.match_indices()
@@ -135,3 +120,36 @@ class CTFViewBackend(Backend):
                 return result
         except Exception as e:
             raise ValueError('failed to get {} from ctf'.format(attr)) from e
+
+    def _einsum(self, expr, operands):
+        inputs_indices = [operand.indices for operand in operands]
+        inputs_shapes = [operand.tsr.shape for operand in operands]
+        expanded_expr = indices_utils.expand_einsum(expr, inputs_indices, inputs_shapes)
+        if expanded_expr is not None:
+            result = ctf.einsum(expanded_expr.indices_string, *(operand.tsr for operand in operands))
+            if isinstance(result, ctf.tensor):
+                newshape = expanded_expr.outputs[0].newshape(result.shape)
+                return self.tensor(result).reshape(*newshape)
+            else:
+                return result
+        else:
+            result = ctf.einsum(expr.indices_string, *(operand.unwrap() for operand in operands))
+            if isinstance(result, ctf.tensor):
+                newshape = expr.outputs[0].newshape(result.shape)
+                return self.tensor(result).reshape(*newshape)
+            else:
+                return result
+
+    def _einsvd(self, expr, a):
+        u, s, vh = a.unwrap().i(expr.inputs[0].indices_string).svd(
+            expr.outputs[0].indices_string,
+            expr.outputs[1].indices_string,
+        )
+        u_newshape = expr.outputs[0].newshape(u.shape)
+        vh_newshape = expr.outputs[1].newshape(vh.shape)
+        return self.tensor(u).reshape(*u_newshape), self.tensor(s), self.tensor(vh).reshape(*vh_newshape)
+
+    def _einsumsvd(self, expr, operands):
+        einsum_expr, einsvd_expr = einstr.split_einsumsvd(expr)
+        a = self._einsum(einsum_expr, operands)
+        return self._einsvd(einsvd_expr, a)

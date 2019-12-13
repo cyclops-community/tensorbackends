@@ -67,3 +67,32 @@ class BackendTest(unittest.TestCase):
         self.assertTrue(tb.allclose(z2, c.reshape(1,9)))
         self.assertTrue(tb.allclose(z3, c.reshape(1,9)))
         self.assertTrue(tb.allclose(z4, c.reshape(1,9)))
+
+
+    def test_einsvd(self, tb):
+        a = tb.astensor([[1,0,0,0],[0,2,0,0],[0,0,3,0],[0,0,0,4]], dtype=float).reshape(2,2,2,2)
+        u, s, v = tb.einsvd('ijkl->(ij)s,s(kl)', a)
+        self.assertEqual(u.shape, (4,4))
+        self.assertEqual(s.shape, (4,))
+        self.assertEqual(v.shape, (4,4))
+        u_true = tb.astensor([[0,0,0,1],[0,0,1,0],[0,1,0,0],[1,0,0,0]])
+        s_true = tb.astensor([4,3,2,1])
+        v_true = tb.astensor([[0,0,0,1],[0,0,1,0],[0,1,0,0],[1,0,0,0]])
+        self.assertTrue(tb.allclose(u, u_true))
+        self.assertTrue(tb.allclose(s, s_true))
+        self.assertTrue(tb.allclose(v, v_true))
+
+
+    def test_einsumsvd(self, tb):
+        a = tb.astensor([[0,2,0,0],[1,0,0,0],[0,0,3,0],[0,0,0,4]], dtype=float)
+        p = tb.astensor([[0,1,0,0],[1,0,0,0],[0,0,1,0],[0,0,0,1]], dtype=float)
+        u, s, v = tb.einsumsvd('ij,jk->is,sk', p, a)
+        self.assertEqual(u.shape, (4,4))
+        self.assertEqual(s.shape, (4,))
+        self.assertEqual(v.shape, (4,4))
+        u_true = tb.astensor([[0,0,0,1],[0,0,1,0],[0,1,0,0],[1,0,0,0]])
+        s_true = tb.astensor([4,3,2,1])
+        v_true = tb.astensor([[0,0,0,1],[0,0,1,0],[0,1,0,0],[1,0,0,0]])
+        self.assertTrue(tb.allclose(u, u_true))
+        self.assertTrue(tb.allclose(s, s_true))
+        self.assertTrue(tb.allclose(v, v_true))

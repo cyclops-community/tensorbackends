@@ -16,11 +16,9 @@ def parse_einsum(subscripts, ndims):
     expr = parse(subscripts).match(ndims)
     if len(expr.outputs) != 1:
         raise ValueError('too many outputs for einsum: {}'.format(expr.source))
-    output_indices = set(expr.outputs[0])
+    output_indices = expr.output_indices
     if not output_indices.issubset(expr.input_indices):
         raise ValueError('output indices should be a subset of input indices for einsum: "{}"'.format(expr.source))
-    if len(output_indices) != len(expr.outputs[0]):
-        raise ValueError('output indices should not repeat for einsum: "{}"'.format(expr.source))
     return expr
 
 
@@ -32,15 +30,52 @@ def parse_einsvd(subscripts, ndim):
         raise ValueError('expect two outputs for einsvd: "{}"'.format(expr.source))
     if len(set(expr.inputs[0])) != len(expr.inputs[0]):
         raise ValueError('input indices should not repeat for einsvd: "{}"'.format(expr.source))
-    newindices = expr.output_indices - expr.input_indices
+    input_indices, output_indices = expr.input_indices, expr.output_indices
+    if not input_indices.issubset(output_indices):
+        raise ValueError('expect input indices subset of output indices for einsvd: "{}"'.format(expr.source))
+    newindices = output_indices - input_indices
     if len(newindices) != 1:
         raise ValueError('expect one new index in outputs for einsvd: "{}"'.format(expr.source))
     newindex = newindices.pop()
     if newindex not in expr.outputs[0] or newindex not in expr.outputs[1]:
         raise ValueError('expect new index in both outputs for einsvd: "{}"'.format(expr.source))
-    if len(expr.output_indices) != len(expr.outputs[0]) + len(expr.outputs[1]) - 1:
+    if len(expr.outputs[0]) == 1 or len(expr.outputs[1]) == 1:
+        raise ValueError('expect outputs to be at least two dimensional for einsvd: "{}"'.format(expr.source))
+    if len(output_indices) != len(expr.outputs[0]) + len(expr.outputs[1]) - 1:
         raise ValueError('only the new index can repeat in the output for einsvd: "{}"'.format(expr.source))
     return expr
+
+
+def parse_einsumsvd(subscripts, ndims):
+    expr = parse(subscripts).match(ndims)
+    if len(expr.inputs) < 1:
+        raise ValueError('expect at least one input for einsumsvd: "{}"'.format(expr.source))
+    if len(expr.outputs) != 2:
+        raise ValueError('expect two outputs for einsumsvd: "{}"'.format(expr.source))
+    input_indices, output_indices = expr.input_indices, expr.output_indices
+    newindices = output_indices - input_indices
+    if len(newindices) != 1:
+        raise ValueError('expect one new index in outputs for einsumsvd: "{}"'.format(expr.source))
+    newindex = newindices.pop()
+    if newindex not in expr.outputs[0] or newindex not in expr.outputs[1]:
+        raise ValueError('expect new index in both outputs for einsumsvd: "{}"'.format(expr.source))
+    if len(expr.outputs[0]) == 1 or len(expr.outputs[1]) == 1:
+        raise ValueError('expect outputs to be at least two dimensional for einsumsvd: "{}"'.format(expr.source))
+    return expr
+
+
+def split_einsumsvd(expr):
+    newindex = (expr.output_indices - expr.input_indices).pop()
+    intermediate_indices = [
+        idx for idx in itertools.chain.from_iterable(expr.outputs)
+        if idx != newindex
+    ]
+    output_intermediate = [OutputTerm(intermediate_indices, [], '')]
+    input_intermediate = [InputTerm(intermediate_indices, '')]
+    # TODO here expr.nindices > number of distinct indices in subexpressions
+    einsum_expr = Expression(expr.inputs, output_intermediate, expr.nindices, expr.source)
+    einsvd_expr = Expression(input_intermediate, expr.outputs, expr.nindices, expr.source)
+    return einsum_expr, einsvd_expr
 
 
 class Expression:

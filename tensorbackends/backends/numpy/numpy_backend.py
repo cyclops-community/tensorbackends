@@ -64,37 +64,20 @@ class NumPyBackend(Backend):
             raise TypeError('all operands should be {}'.format(self.tensor.__qualname__))
         ndims = [operand.ndim for operand in operands]
         expr = einstr.parse_einsum(subscripts, ndims)
-        result = np.einsum(expr.indices_string, *(operand.tsr for operand in operands))
-        if isinstance(result, np.ndarray):
-            newshape = expr.outputs[0].newshape(result.shape)
-            result = result.reshape(*newshape)
-            return self.tensor(result)
-        else:
-            return result
+        return self._einsum(expr, operands)
 
     def einsvd(self, subscripts, a):
         if not isinstance(a, self.tensor):
             raise TypeError('the input should be {}'.format(self.tensor.__qualname__))
         expr = einstr.parse_einsvd(subscripts, a.ndim)
-        newindex = (expr.output_indices - expr.input_indices).pop()
-        prod = lambda iterable: functools.reduce(operator.mul, iterable, 1)
-        axis_of_index = {index: axis for axis, index in enumerate(expr.inputs[0])}
-        u_axes_from_a = [axis_of_index[index] for index in expr.outputs[0] if index != newindex]
-        vh_axes_from_a = [axis_of_index[index] for index in expr.outputs[1] if index != newindex]
-        # form matrix of a
-        a_matrix_axes = [*u_axes_from_a, *vh_axes_from_a]
-        a_matrix_shape = (prod(a.shape[axis] for axis in u_axes_from_a), -1)
-        a_matrix = a.transpose(*a_matrix_axes).reshape(*a_matrix_shape)
-        u, s, vh = la.svd(a_matrix, full_matrices=False)
-        # form u
-        u = u.reshape(*(a.shape[axis] for axis in u_axes_from_a), len(s))
-        u = np.moveaxis(u, -1, expr.outputs[0].find(newindex))
-        u = u.reshape(*expr.outputs[0].newshape(u.shape))
-        # form vh
-        vh = vh.reshape(len(s), *(a.shape[axis] for axis in vh_axes_from_a))
-        vh = np.moveaxis(vh, 0, expr.outputs[1].find(newindex))
-        vh = vh.reshape(*expr.outputs[1].newshape(vh.shape))
-        return self.tensor(u), self.tensor(s), self.tensor(vh)
+        return self._einsvd(expr, a)
+
+    def einsumsvd(self, subscripts, *operands):
+        if not all(isinstance(operand, self.tensor) for operand in operands):
+            raise TypeError('all operands should be {}'.format(self.tensor.__qualname__))
+        ndims = [operand.ndim for operand in operands]
+        expr = einstr.parse_einsumsvd(subscripts, ndims)
+        return self._einsumsvd(expr, operands)
 
     def isclose(self, a, b, *, rtol=1e-9, atol=0.0):
         a = b.tsr if isinstance(b, NumPyTensor) else b
@@ -134,3 +117,40 @@ class NumPyBackend(Backend):
                 return result
         except Exception as e:
             raise ValueError('failed to get {} from numpy'.format(attr)) from e
+
+    def _einsum(self, expr, operands):
+        result = np.einsum(expr.indices_string, *(operand.tsr for operand in operands), optimize='greedy')
+        if isinstance(result, np.ndarray) and result.ndim != 0:
+            newshape = expr.outputs[0].newshape(result.shape)
+            result = result.reshape(*newshape)
+            return self.tensor(result)
+        elif isinstance(result, np.ndarray):
+            return result.item()
+        else:
+            return result
+
+    def _einsvd(self, expr, a):
+        newindex = (expr.output_indices - expr.input_indices).pop()
+        prod = lambda iterable: functools.reduce(operator.mul, iterable, 1)
+        axis_of_index = {index: axis for axis, index in enumerate(expr.inputs[0])}
+        u_axes_from_a = [axis_of_index[index] for index in expr.outputs[0] if index != newindex]
+        vh_axes_from_a = [axis_of_index[index] for index in expr.outputs[1] if index != newindex]
+        # form matrix of a
+        a_matrix_axes = [*u_axes_from_a, *vh_axes_from_a]
+        a_matrix_shape = (prod(a.shape[axis] for axis in u_axes_from_a), -1)
+        a_matrix = a.transpose(*a_matrix_axes).reshape(*a_matrix_shape)
+        u, s, vh = la.svd(a_matrix, full_matrices=False)
+        # form u
+        u = u.reshape(*(a.shape[axis] for axis in u_axes_from_a), len(s))
+        u = np.moveaxis(u, -1, expr.outputs[0].find(newindex))
+        u = u.reshape(*expr.outputs[0].newshape(u.shape))
+        # form vh
+        vh = vh.reshape(len(s), *(a.shape[axis] for axis in vh_axes_from_a))
+        vh = np.moveaxis(vh, 0, expr.outputs[1].find(newindex))
+        vh = vh.reshape(*expr.outputs[1].newshape(vh.shape))
+        return self.tensor(u), self.tensor(s), self.tensor(vh)
+
+    def _einsumsvd(self, expr, operands):
+        einsum_expr, einsvd_expr = einstr.split_einsumsvd(expr)
+        a = self._einsum(einsum_expr, operands)
+        return self._einsvd(einsvd_expr, a)
