@@ -17,6 +17,7 @@ class BackendTest(unittest.TestCase):
                 a = tb.empty((2,3), dtype=dtype)
                 self.assertIsInstance(a, tb.tensor)
                 self.assertEqual(a.shape, (2,3))
+                self.assertEqual(a.dtype, dtype)
 
     def test_zeros(self, tb):
         for dtype in [int, float, complex]:
@@ -25,6 +26,7 @@ class BackendTest(unittest.TestCase):
                 self.assertIsInstance(a, tb.tensor)
                 self.assertEqual(a.shape, (2,3))
                 self.assertTrue(tb.allclose(a, 0))
+                self.assertEqual(a.dtype, dtype)
 
     def test_ones(self, tb):
         for dtype in [int, float, complex]:
@@ -33,6 +35,7 @@ class BackendTest(unittest.TestCase):
                 self.assertIsInstance(a, tb.tensor)
                 self.assertEqual(a.shape, (2,3))
                 self.assertTrue(tb.allclose(a, 1))
+                self.assertEqual(a.dtype, dtype)
 
     def test_einsum(self, tb):
         a = tb.astensor([1,2,3,4,5,6]).reshape(1,3,2)

@@ -3,6 +3,7 @@ This module implements the ctfview tensor.
 """
 
 import ctf
+import numpy as np
 
 from ...interface import Tensor
 from . import indices_utils
@@ -32,7 +33,7 @@ class CTFViewTensor(Tensor):
 
     @property
     def dtype(self):
-        return self.tsr.dtype
+        return np.dtype(self.tsr.dtype)
 
     def unwrap(self):
         self.match_indices()

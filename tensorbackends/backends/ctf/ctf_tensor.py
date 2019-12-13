@@ -3,6 +3,7 @@ This module implements the ctf tensor.
 """
 
 import ctf
+import numpy as np
 
 from ...interface import Tensor
 
@@ -30,7 +31,7 @@ class CTFTensor(Tensor):
 
     @property
     def dtype(self):
-        return self.tsr.dtype
+        return np.dtype(self.tsr.dtype)
 
     def unwrap(self):
         return self.tsr
