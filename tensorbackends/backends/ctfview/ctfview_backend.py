@@ -6,6 +6,7 @@ import ctf
 
 from ...interface import Backend
 from ...utils import einstr
+from .ctfview_random import CTFViewRandom
 from .ctfview_tensor import CTFViewTensor
 from . import indices_utils
 
@@ -22,6 +23,10 @@ class CTFViewBackend(Backend):
     @property
     def rank(self):
         return ctf.comm().rank()
+
+    @property
+    def random(self):
+        return CTFViewRandom()
 
     @property
     def tensor(self):

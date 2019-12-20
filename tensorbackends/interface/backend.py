@@ -22,6 +22,10 @@ class Backend:
         raise NotImplementedError()
 
     @property
+    def random(self):
+        raise NotImplementedError()
+
+    @property
     def tensor(self):
         raise NotImplementedError()
 

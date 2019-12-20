@@ -6,6 +6,12 @@ from tensorbackends.utils import test_with_backend
 
 @test_with_backend()
 class BackendTest(unittest.TestCase):
+    def test_random(self, tb):
+        self.assertIsInstance(tb.random, tbs.interface.Random)
+
+    def test_tensor(self, tb):
+        self.assertTrue(issubclass(tb.tensor, tbs.interface.Tensor))
+
     def test_astensor(self, tb):
         a = tb.astensor([[1,2,3],[4,5,6]])
         b = tb.astensor([[1,2,3],[4,5,6]])

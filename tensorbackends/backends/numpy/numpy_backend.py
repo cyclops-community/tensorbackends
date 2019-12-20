@@ -9,6 +9,7 @@ import numpy.linalg as la
 
 from ...interface import Backend
 from ...utils import einstr
+from .numpy_random import NumPyRandom
 from .numpy_tensor import NumPyTensor
 
 
@@ -24,6 +25,10 @@ class NumPyBackend(Backend):
     @property
     def rank(self):
         return 0
+
+    @property
+    def random(self):
+        return NumPyRandom()
 
     @property
     def tensor(self):
