@@ -146,7 +146,12 @@ class CTFViewBackend(Backend):
                 return result
 
     def _einsvd(self, expr, a):
-        u, s, vh = a.unwrap().i(expr.inputs[0].indices_string).svd(
+        expanded_expr = indices_utils.expand_einsvd(expr, a.indices)
+        if expanded_expr is None:
+            a.match_indices()
+        else:
+            expr = expanded_expr
+        u, s, vh = a.tsr.i(expr.inputs[0].indices_string).svd(
             expr.outputs[0].indices_string,
             expr.outputs[1].indices_string,
         )
