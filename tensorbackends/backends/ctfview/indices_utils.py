@@ -72,7 +72,7 @@ def expand_einsum(expr, inputs_indices, inputs_shapes):
             for j in range(idx_start, idx_end):
                 mapped_index = index_mappping[term.indices[j]]
                 new_term_indices.extend(mapped_index)
-                if len(mapped_index) > 1 and not fusing:
+                if not fusing:
                     new_term_fusing.append((offset, offset + len(mapped_index)))
                 offset += len(mapped_index)
         i = 0
