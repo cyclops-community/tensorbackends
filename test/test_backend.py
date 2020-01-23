@@ -102,3 +102,9 @@ class BackendTest(unittest.TestCase):
         self.assertTrue(tb.allclose(u, u_true))
         self.assertTrue(tb.allclose(s, s_true))
         self.assertTrue(tb.allclose(v, v_true))
+
+
+    def test_inv(self, tb):
+        a = tb.astensor([[1,2],[3,4]], dtype=float)
+        b = tb.inv(a)
+        self.assertTrue(tb.allclose(a @ b, tb.eye(2), atol=1e-8))

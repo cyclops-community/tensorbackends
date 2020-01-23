@@ -95,6 +95,9 @@ class NumPyBackend(Backend):
         b = b.tsr if isinstance(b, NumPyTensor) else b
         return np.allclose(a, b, rtol=rtol, atol=atol)
 
+    def inv(self, a):
+        return la.inv(a)
+
     def __getattr__(self, attr):
         wrap = lambda val: NumPyTensor(val) if isinstance(val, np.ndarray) else val
         unwrap = lambda val: val.unwrap() if isinstance(val, NumPyTensor) else val

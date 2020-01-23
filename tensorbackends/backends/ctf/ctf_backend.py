@@ -87,6 +87,10 @@ class CTFBackend(Backend):
     def allclose(self, a, b, *, rtol=1e-9, atol=0.0):
         return self.all(self.isclose(a, b, rtol=rtol, atol=atol))
 
+    def inv(self, a):
+        u, s, v = self.einsvd('ij->ia,ja', a)
+        return self.einsum('ia,a,ja->ji', u, 1/s, v)
+
     def __getattr__(self, attr):
         wrap = lambda val: CTFTensor(val) if isinstance(val, ctf.tensor) else val
         unwrap = lambda val: val.unwrap() if isinstance(val, CTFTensor) else val

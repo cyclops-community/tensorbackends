@@ -64,3 +64,6 @@ class Backend:
 
     def allclose(self, a, b, *, rtol=1e-9, atol=0.0):
         raise NotImplementedError()
+
+    def inv(self, a):
+        raise NotImplementedError()
