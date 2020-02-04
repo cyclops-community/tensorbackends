@@ -12,5 +12,11 @@ class Random:
     def seed(self, seed):
         raise NotImplementedError()
 
+    def random(self, size=None):
+        raise NotImplementedError()
+
     def rand(self, *dims):
+        return self.random(dims or None)
+
+    def uniform(self, low=0.0, high=1.0, size=None):
         raise NotImplementedError()

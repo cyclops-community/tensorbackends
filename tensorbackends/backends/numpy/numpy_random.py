@@ -12,8 +12,11 @@ class NumPyRandom(Random):
     def seed(self, seed):
         np.random.seed(seed)
 
-    def rand(self, *dims):
-        return NumPyTensor(np.random.rand(*dims))
+    def random(self, size):
+        return NumPyTensor(np.random.random(size))
+
+    def uniform(self, low=0.0, high=1.0, size=None):
+        return NumPyTensor(np.random.uniform(low, high, size))
 
     def __getattr__(self, attr):
         wrap = lambda val: NumPyTensor(val) if isinstance(val, np.ndarray) else val
