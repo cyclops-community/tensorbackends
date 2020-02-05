@@ -98,6 +98,10 @@ class NumPyBackend(Backend):
     def inv(self, a):
         return la.inv(a)
 
+    def svd(self, a):
+        u, s, vh = la.svd(a, full_matrices=False)
+        return NumPyTensor(u), NumPyTensor(s), NumPyTensor(vh)
+
     def __getattr__(self, attr):
         wrap = lambda val: NumPyTensor(val) if isinstance(val, np.ndarray) else val
         unwrap = lambda val: val.unwrap() if isinstance(val, NumPyTensor) else val

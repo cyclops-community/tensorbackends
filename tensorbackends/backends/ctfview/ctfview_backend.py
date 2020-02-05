@@ -102,6 +102,14 @@ class CTFViewBackend(Backend):
         u, s, v = self.einsvd('ij->ia,ja', a)
         return self.einsum('ia,a,ja->ji', u, 1/s, v)
 
+    def svd(self, a):
+        if not isinstance(a, self.tensor):
+            raise TypeError('the input should be {}'.format(self.tensor.__qualname__))
+        if a.ndim != 2:
+            raise TypeError('the input tensor should be a matrix')
+        u, s, vh = ctf.svd(a.unwrap())
+        return self.tensor(u), self.tensor(ctf.real(s)), self.tensor(vh)
+
     def __getattr__(self, attr):
         wrap = lambda val: CTFViewTensor(val) if isinstance(val, ctf.tensor) else val
         unwrap = lambda val: val.unwrap() if isinstance(val, CTFViewTensor) else val

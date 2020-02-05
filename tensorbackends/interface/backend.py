@@ -67,3 +67,6 @@ class Backend:
 
     def inv(self, a):
         raise NotImplementedError()
+
+    def svd(self, a):
+        raise NotImplementedError()
