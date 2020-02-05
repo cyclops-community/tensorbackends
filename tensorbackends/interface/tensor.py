@@ -34,3 +34,11 @@ class Tensor:
 
     def write(self, inds, vals):
         raise NotImplementedError()
+
+    @property
+    def T(self):
+        return self.transpose(1, 0)
+
+    @property
+    def H(self):
+        return self.conj().T
