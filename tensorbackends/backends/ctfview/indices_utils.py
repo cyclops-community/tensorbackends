@@ -93,7 +93,7 @@ def expand_einsum(expr, inputs_indices, inputs_shapes):
         newinputs.append(new_input_term)
     if nindices > len(einstr.chars): return None
     newoutputs = [expand_output_term(expr.outputs[0])]
-    return einstr.Expression(newinputs, newoutputs, nindices, expr.source)
+    return einstr.Expression(newinputs, newoutputs, source=expr.source)
 
 def expand_einsvd(expr, input_indices):
     index_mappping = {}
@@ -148,7 +148,7 @@ def expand_einsvd(expr, input_indices):
     newinputs = [expand_input_term(expr.inputs[0], input_indices)]
     if nindices > len(einstr.chars): return None
     newoutputs = [expand_output_term(term) for term in expr.outputs]
-    return einstr.Expression(newinputs, newoutputs, nindices, expr.source)
+    return einstr.Expression(newinputs, newoutputs, source=expr.source)
 
 def prod(iterable):
     return functools.reduce(operator.mul, iterable, 1)

@@ -73,17 +73,23 @@ def split_einsumsvd(expr):
     output_intermediate = [OutputTerm(intermediate_indices, [], '')]
     input_intermediate = [InputTerm(intermediate_indices, '')]
     # TODO here expr.nindices > number of distinct indices in subexpressions
-    einsum_expr = Expression(expr.inputs, output_intermediate, expr.nindices, expr.source)
-    einsvd_expr = Expression(input_intermediate, expr.outputs, expr.nindices, expr.source)
+    einsum_expr = Expression(expr.inputs, output_intermediate, source=expr.source)
+    einsvd_expr = Expression(input_intermediate, expr.outputs, source=expr.source)
     return einsum_expr, einsvd_expr
 
 
 class Expression:
-    def __init__(self, inputs, outputs, nindices, source):
+    def __init__(self, inputs, outputs, source=''):
         self.inputs = inputs
         self.outputs = outputs
-        self.nindices = nindices
         self.source = source
+
+    @property
+    def nindices(self):
+        return max(
+            idx for idx in itertools.chain(self.input_indices, self.output_indices)
+            if idx is not Ellipsis
+        ) + 1
 
     @property
     def indices_string(self):
@@ -112,7 +118,7 @@ class Expression:
         outputs = [OutputTerm.parse(s, mapping) for s in output_subscripts]
         if len(mapping) > len(chars):
             raise ValueError('too many indices: {} (maximum {})'.format(len(mapping), len(chars)))
-        return Expression(inputs, outputs, len(mapping), subscripts)
+        return Expression(inputs, outputs, source=subscripts)
 
     def match(self, ndims):
         if len(ndims) != len(self.inputs):
@@ -126,7 +132,7 @@ class Expression:
         newinputs = [t.match(ndim, fresh) for t, ndim in zip(self.inputs, ndims)]
         ellipsis = list(range(self.nindices, nindices))
         newoutputs = [t.expand(ellipsis) for t in self.outputs]
-        return Expression(newinputs, newoutputs, nindices, self.source)
+        return Expression(newinputs, newoutputs, source=self.source)
 
     def __str__(self):
         inputs = ','.join(str(t) for t in self.inputs)
