@@ -1,9 +1,10 @@
 from . import einstr
 import numpy as np
 
+
 def apply_A(backend,expr_A,ops_A,expr_X,op_X,expr_Y):
-    exp = einstr.Expression(expr_A.inputs + [expr_X], [expr_Y]) 
-    return backend.einsum(str(exp),*(list(ops_A)+[op_X]))
+    exp = einstr.Expression([*expr_A.inputs, expr_X], [expr_Y]) 
+    return backend.einsum(str(exp), *ops_A, op_X)
 
 def get_shape(expr, op_inputs, output):
     out_str = output.indices_string
@@ -27,7 +28,7 @@ def einsumsvd_rand(backend, subscripts, *operands, rank, niter=1):
     need_transpose_X = False
     permutation_X = []
     shape_U = get_shape(expr_A, ops_A, einsvd_expr.outputs[0])
-    idx_X = ['_']*len(shape_U)
+    idx_X = [None]*len(shape_U)
     for i in range(len(shape_U)):
         if shape_U[i] == 0:
             shape_U[i] = dim_aux
@@ -47,7 +48,7 @@ def einsumsvd_rand(backend, subscripts, *operands, rank, niter=1):
     need_transpose_VT = False
     permutation_VT = []
     shape_VT = get_shape(expr_A, ops_A, einsvd_expr.outputs[1])
-    idx_YT = ['_']*len(shape_VT)
+    idx_YT = [None]*len(shape_VT)
     for i in range(len(shape_VT)):
         if shape_VT[i] == 0:
             shape_VT[i] = dim_aux
@@ -68,19 +69,19 @@ def einsumsvd_rand(backend, subscripts, *operands, rank, niter=1):
     for iter in range(niter):
         op_YT = apply_A(backend,expr_A,ops_A,term_X,op_X,term_YT)
         op_X = apply_A(backend,expr_A,ops_A,term_YT,op_YT,term_X)
-        mat_X, _ = backend.qr(backend.reshape(op_X,[np.prod(op_X.shape)//rank,rank]))
-        op_X = backend.reshape(mat_X,op_X.shape)
+        mat_X, _ = backend.qr(op_X.reshape(np.prod(op_X.shape)//rank, rank))
+        op_X = mat_X.reshape(*op_X.shape)
     op_YT = apply_A(backend,expr_A,ops_A,term_X,op_X,term_YT)
-    mat_VT, _ = backend.qr(backend.reshape(op_YT,[np.prod(op_YT.shape)//rank,rank]))
-    op_YT = backend.reshape(mat_VT,op_YT.shape)
+    mat_VT, _ = backend.qr(op_YT.reshape(np.prod(op_YT.shape)//rank, rank))
+    op_YT = mat_VT.reshape(*op_YT.shape)
     op_X = apply_A(backend,expr_A,ops_A,term_YT,op_YT,term_X)
-    mat_U, S, mat_XVT = backend.svd(backend.reshape(op_X,[np.prod(op_X.shape)//rank,rank]))
-    op_YT = backend.tensordot(op_YT, mat_VT, axes=((-1),(-1)))
-    op_X = backend.reshape(mat_U,op_X.shape)
+    mat_U, S, mat_XVT = backend.svd(op_X.reshape(np.prod(op_X.shape)//rank, rank))
+    op_YT = backend.tensordot(op_YT, mat_XVT, axes=((-1),(-1)))
+    op_X = mat_U.reshape(*op_X.shape)
     U = op_X
     if need_transpose_X:
-      U = backend.einsum(term_X.indices_string+"->"+einsvd_expr.outputs[0].indices_string,U)
+        U = backend.einsum(term_X.indices_string+'->'+einsvd_expr.outputs[0].indices_string,U)
     VT = op_YT
     if need_transpose_VT:
-      VT = backend.einsum(term_YT.indices_string+"->"+einsvd_expr.outputs[1].indices_string,VT)
-    return U, S, VT 
+        VT = backend.einsum(term_YT.indices_string+'->'+einsvd_expr.outputs[1].indices_string,VT)
+    return U, S, VT
