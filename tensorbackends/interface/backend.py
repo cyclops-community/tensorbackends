@@ -2,6 +2,9 @@
 This module defines the interface of a backend.
 """
 
+from .. import extensions
+
+
 class Backend:
     _instance = None
     def __new__(cls):
@@ -58,6 +61,9 @@ class Backend:
 
     def einsumsvd(self, subscripts, *operands):
         raise NotImplementedError()
+
+    def einsumsvd_rand(self, subscripts, *operands, rank, niter=1):
+        return extensions.einsumsvd_rand(self, subscripts, *operands, rank=rank, niter=niter)
 
     def isclose(self, a, b, *, rtol=1e-9, atol=0.0):
         raise NotImplementedError()

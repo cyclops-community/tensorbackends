@@ -1,24 +1,8 @@
-from . import einstr
+from ..utils import einstr
 import numpy as np
 
 
-def apply_A(backend,expr_A,ops_A,expr_X,op_X,expr_Y):
-    exp = einstr.Expression([*expr_A.inputs, expr_X], [expr_Y]) 
-    return backend.einsum(str(exp), *ops_A, op_X)
-
-def get_shape(expr, op_inputs, output):
-    out_str = output.indices_string
-    out_shape = [0]*len(out_str)
-    for i in range(len(expr.inputs)):
-        idx = expr.inputs[i].indices_string
-        shape = op_inputs[i].shape
-        for j in range(op_inputs[i].ndim):
-            for k in range(len(out_str)):
-                if out_str[k] == idx[j]:
-                    out_shape[k] = shape[j]
-    return out_shape
-
-def einsumsvd_rand(backend, subscripts, *operands, rank, niter=1):
+def einsumsvd_rand(backend, subscripts, *operands, rank, niter):
     ndims = [operand.ndim for operand in operands]
     expr = einstr.parse_einsumsvd(subscripts, ndims)
     expr_A, einsvd_expr = einstr.split_einsumsvd(expr)
@@ -85,3 +69,21 @@ def einsumsvd_rand(backend, subscripts, *operands, rank, niter=1):
     if need_transpose_VT:
         VT = backend.einsum(term_YT.indices_string+'->'+einsvd_expr.outputs[1].indices_string,VT)
     return U, S, VT
+
+
+def apply_A(backend,expr_A,ops_A,expr_X,op_X,expr_Y):
+    exp = einstr.Expression([*expr_A.inputs, expr_X], [expr_Y])
+    return backend.einsum(str(exp), *ops_A, op_X)
+
+
+def get_shape(expr, op_inputs, output):
+    out_str = output.indices_string
+    out_shape = [0]*len(out_str)
+    for i in range(len(expr.inputs)):
+        idx = expr.inputs[i].indices_string
+        shape = op_inputs[i].shape
+        for j in range(op_inputs[i].ndim):
+            for k in range(len(out_str)):
+                if out_str[k] == idx[j]:
+                    out_shape[k] = shape[j]
+    return out_shape
