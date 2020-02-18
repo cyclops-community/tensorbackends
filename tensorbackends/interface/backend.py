@@ -76,3 +76,6 @@ class Backend:
 
     def svd(self, a):
         raise NotImplementedError()
+
+    def rsvd(self, a, rank, niter=1, oversamp=5):
+        return extensions.rsvd(self, a, rank, niter, oversamp)

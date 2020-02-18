@@ -104,6 +104,16 @@ class BackendTest(unittest.TestCase):
         self.assertTrue(tb.allclose(v, v_true))
 
 
+    def test_rsvd(self, tb):
+        a = tb.astensor([[1,0,0,0],[0,1,0,0],[0,0,10,0],[0,0,0,20]], dtype=float)
+        u, s, vh = tb.rsvd(a, rank=2, niter=2, oversamp=1)
+        self.assertEqual(u.shape, (4,2))
+        self.assertEqual(s.shape, (2,))
+        self.assertEqual(vh.shape, (2,4))
+        s_true = tb.astensor([20, 10])
+        self.assertTrue(tb.allclose(s, s_true))
+
+
     def test_einsumsvd_rand_1(self, tb):
         a = tb.astensor([[0,2,0,0],[1,0,0,0],[0,0,3,0],[0,0,0,4]], dtype=float)
         p = tb.astensor([[0,1,0,0],[1,0,0,0],[0,0,1,0],[0,0,0,1]], dtype=float)
