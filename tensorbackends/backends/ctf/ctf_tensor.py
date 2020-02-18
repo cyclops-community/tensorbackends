@@ -36,6 +36,9 @@ class CTFTensor(Tensor):
     def unwrap(self):
         return self.tsr
 
+    def numpy(self):
+        return self.unwrap().to_nparray()
+
     def __repr__(self):
         return repr(self.tsr)
 

@@ -35,6 +35,9 @@ class NumPyTensor(Tensor):
     def unwrap(self):
         return self.tsr
 
+    def numpy(self):
+        return self.tsr.copy()
+
     def __repr__(self):
         return repr(self.tsr)
 

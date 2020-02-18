@@ -26,6 +26,9 @@ class Tensor:
     def unwrap(self):
         raise NotImplementedError()
 
+    def numpy(self):
+        raise NotImplementedError()
+
     def copy(self):
         raise NotImplementedError()
 

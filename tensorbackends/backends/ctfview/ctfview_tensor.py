@@ -39,6 +39,9 @@ class CTFViewTensor(Tensor):
         self.match_indices()
         return self.tsr
 
+    def numpy(self):
+        return self.unwrap().to_nparray()
+
     def __repr__(self):
         self.match_indices()
         return repr(self.tsr)

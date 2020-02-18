@@ -26,6 +26,11 @@ class TensorTest(unittest.TestCase):
             a = tb.empty(shape)
             self.assertEqual(a.size, reduce(operator.mul, shape))
 
+    def test_numpy(self, tb):
+        import numpy as np
+        a = tb.ones((2,3))
+        self.assertIsInstance(a.numpy(), np.ndarray)
+
     def test_copy(self, tb):
         a = tb.ones((2,3))
         b = a.copy()
