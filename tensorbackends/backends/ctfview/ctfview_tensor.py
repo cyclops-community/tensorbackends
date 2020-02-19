@@ -114,6 +114,7 @@ class CTFViewTensor(Tensor):
     def __getattr__(self, attr):
         wrap = lambda val: CTFViewTensor(val) if isinstance(val, ctf.tensor) else val
         unwrap = lambda val: val.unwrap() if isinstance(val, CTFViewTensor) else val
+        self.match_indices()
         try:
             result = getattr(self.tsr, attr)
             if callable(result):
