@@ -7,7 +7,8 @@ def einsumsvd_implicit_rand(backend, subscripts, *operands, rank, niter):
     expr = einstr.parse_einsumsvd(subscripts, ndims)
     expr_A, einsvd_expr = einstr.split_einsumsvd(expr)
     dim_aux = rank # + oversamp # if oversampling, but then need to extract
-    ops_A = operands[:len(expr_A.inputs)]
+    ops_A = operands
+    ops_A_conj = [tsr.conj() for tsr in ops_A]
     shape_X = []
     need_transpose_X = False
     permutation_X = []
@@ -48,19 +49,19 @@ def einsumsvd_implicit_rand(backend, subscripts, *operands, rank, niter):
         idx_YT[permutation_VT[i]] = einsvd_expr.outputs[1].indices[i]
     term_YT = einstr.InputTerm(idx_YT, '')
     shape_YT.append(dim_aux)
-    op_X = backend.random.random(shape_X)
+    op_X = backend.random.uniform(low=-1.0, high=1.0, size=shape_X)
     # FIXME: start by QR of op_X if rank is not too large
     for iter in range(niter):
-        op_YT = apply_A(backend,expr_A,ops_A,term_X,op_X,term_YT)
+        op_YT = apply_A(backend,expr_A,ops_A_conj,term_X,op_X,term_YT)
         op_X = apply_A(backend,expr_A,ops_A,term_YT,op_YT,term_X)
         mat_X, _ = backend.qr(op_X.reshape(np.prod(op_X.shape)//rank, rank))
         op_X = mat_X.reshape(*op_X.shape)
-    op_YT = apply_A(backend,expr_A,ops_A,term_X,op_X,term_YT)
+    op_YT = apply_A(backend,expr_A,ops_A_conj,term_X,op_X,term_YT)
     mat_VT, _ = backend.qr(op_YT.reshape(np.prod(op_YT.shape)//rank, rank))
     op_YT = mat_VT.reshape(*op_YT.shape)
     op_X = apply_A(backend,expr_A,ops_A,term_YT,op_YT,term_X)
     mat_U, S, mat_XVT = backend.svd(op_X.reshape(np.prod(op_X.shape)//rank, rank))
-    op_YT = backend.tensordot(op_YT, mat_XVT, axes=((-1),(-1)))
+    op_YT = backend.tensordot(op_YT.conj(), mat_XVT, axes=((-1),(-1)))
     op_X = mat_U.reshape(*op_X.shape)
     U = op_X
     if need_transpose_X:
@@ -68,10 +69,16 @@ def einsumsvd_implicit_rand(backend, subscripts, *operands, rank, niter):
     VT = op_YT
     if need_transpose_VT:
         VT = backend.einsum(term_YT.indices_string+'->'+einsvd_expr.outputs[1].indices_string,VT)
+    U_newshape = einsvd_expr.outputs[0].newshape(U.shape)
+    if U_newshape != U.shape:
+        U = U.reshape(*U_newshape)
+    VT_newshape = einsvd_expr.outputs[1].newshape(VT.shape)
+    if VT_newshape != VT.shape:
+        VT = VT.reshape(*VT_newshape)
     return U, S, VT
 
 
-def apply_A(backend,expr_A,ops_A,expr_X,op_X,expr_Y):
+def apply_A(backend, expr_A, ops_A, expr_X, op_X, expr_Y):
     exp = einstr.Expression([*expr_A.inputs, expr_X], [expr_Y])
     return backend.einsum(str(exp), *ops_A, op_X)
 

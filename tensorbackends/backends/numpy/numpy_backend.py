@@ -116,13 +116,13 @@ class NumPyBackend(Backend):
         return self._einsvd(einsvd_expr, a, svd_func)
 
     def isclose(self, a, b, *, rtol=1e-9, atol=0.0):
-        a = a.tsr if isinstance(b, NumPyTensor) else b
+        a = a.tsr if isinstance(a, NumPyTensor) else a
         b = b.tsr if isinstance(b, NumPyTensor) else b
         y = np.isclose(a, b, rtol=rtol, atol=atol)
         return NumPyTensor(y) if isinstance(y, np.ndarray) else y
 
     def allclose(self, a, b, *, rtol=1e-9, atol=0.0):
-        a = a.tsr if isinstance(b, NumPyTensor) else b
+        a = a.tsr if isinstance(a, NumPyTensor) else a
         b = b.tsr if isinstance(b, NumPyTensor) else b
         return np.allclose(a, b, rtol=rtol, atol=atol)
 

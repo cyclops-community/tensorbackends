@@ -90,16 +90,19 @@ class BackendTest(unittest.TestCase):
 
 
     def test_einsvd_options(self, tb):
-        from tensorbackends.interface.options import ReducedSVD, RandomizedSVD
-        a = tb.astensor([[1,0,0,0],[0,2,0,0],[0,0,30,0],[0,0,0,40]], dtype=float).reshape(2,2,2,2)
-        s_true = tb.astensor([40,30])
-        for option in [ReducedSVD(rank=2), RandomizedSVD(rank=2, niter=5, oversamp=1)]:
+        from tensorbackends.interface import ReducedSVD, RandomizedSVD
+        a = tb.astensor([[1e-3,0,0,0],[0,2e-3j,0,0],[0,0,3,0],[0,0,0,4j]], dtype=complex).reshape(2,2,2,2)
+        s_true = tb.astensor([4,3])
+        low_rank = tb.astensor([[0,0,0,0],[0,0,0,0],[0,0,3,0],[0,0,0,4j]], dtype=complex)
+        for option in [ReducedSVD(rank=2), RandomizedSVD(rank=2, niter=2, oversamp=1)]:
             with self.subTest(option=option):
                 u, s, v = tb.einsvd('ijkl->(ij)s,s(kl)', a, option=option)
+                usv = tb.einsum('is,s,sk->ik', u, s, v)
                 self.assertEqual(u.shape, (4,2))
                 self.assertEqual(s.shape, (2,))
                 self.assertEqual(v.shape, (2,4))
                 self.assertTrue(tb.allclose(s, s_true))
+                self.assertTrue(tb.allclose(usv, low_rank, atol=1e-9))
 
 
     def test_einsumsvd(self, tb):
@@ -118,22 +121,39 @@ class BackendTest(unittest.TestCase):
 
 
     def test_einsumsvd_options(self, tb):
-        from tensorbackends.interface.options import ReducedSVD, RandomizedSVD, ImplicitRandomizedSVD
-        a = tb.astensor([[0,2,0,0],[1,0,0,0],[0,0,30,0],[0,0,0,40]], dtype=float)
-        p = tb.astensor([[0,1,0,0],[1,0,0,0],[0,0,1,0],[0,0,0,1]], dtype=float)
-        s_true = tb.astensor([40,30])
+        from tensorbackends.interface import ReducedSVD, RandomizedSVD, ImplicitRandomizedSVD
+        a = tb.astensor([[0,2e-3j,0,0],[1e-3,0,0,0],[0,0,3,0],[0,0,0,4j]], dtype=complex)
+        p = tb.astensor([[0,1,0,0],[1,0,0,0],[0,0,1,0],[0,0,0,1]], dtype=complex)
+        s_true = tb.astensor([4,3])
+        low_rank = tb.astensor([[0,0,0,0],[0,0,0,0],[0,0,3,0],[0,0,0,4j]], dtype=complex)
         options = [
             ReducedSVD(rank=2),
-            RandomizedSVD(rank=2, niter=3, oversamp=1),
-            ImplicitRandomizedSVD(rank=2, niter=5)
+            RandomizedSVD(rank=2, niter=2, oversamp=1),
+            ImplicitRandomizedSVD(rank=2, niter=2)
         ]
         for option in options:
             with self.subTest(option=option):
                 u, s, v = tb.einsumsvd('ij,jk->is,sk', p, a, option=option)
+                usv = tb.einsum('is,s,sk->ik', u, s, v)
                 self.assertEqual(u.shape, (4,2))
                 self.assertEqual(s.shape, (2,))
                 self.assertEqual(v.shape, (2,4))
                 self.assertTrue(tb.allclose(s, s_true))
+                self.assertTrue(tb.allclose(usv, low_rank, atol=1e-9))
+
+
+    def test_einsumsvd_implicit_rand(self, tb):
+        A1 = tb.random.random((3,2,7)) + tb.random.random((3,2,7)) * 1j
+        A2 = tb.random.random((7,4,3,5)) + tb.random.random((7,4,3,5)) * 1j
+        A3 = tb.random.random((5,2,2,3)) + tb.random.random((5,2,2,3)) * 1j
+        A4 = tb.random.random((3,2,3)) + tb.random.random((3,2,3)) * 1j
+        A = tb.einsum("ijr,rkls,smnt,tpq->ikmpjlnq", A1, A2, A3, A4)
+        u, s, v = tb.einsumsvd_implicit_rand('ijr,rkls,smnt,tpq->(ikmp)y,y(jlnq)', A1, A2, A3, A4, rank=16, niter=4)
+        mu, ms, mv = tb.svd(A.reshape(48, 36))
+        usv = tb.einsum('is,s,sj->ij', u[:,:4], s[:4], v[:4,:])
+        musv = tb.einsum('is,s,sj->ij', mu[:,:4], ms[:4], mv[:4:])
+        self.assertTrue(tb.allclose(s[:4], ms[:4]))
+        self.assertTrue(tb.allclose(usv, musv))
 
 
     def test_inv(self, tb):
