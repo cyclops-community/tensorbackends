@@ -2,7 +2,7 @@ from ..utils import einstr
 import numpy as np
 
 
-def einsumsvd_rand(backend, subscripts, *operands, rank, niter):
+def einsumsvd_implicit_rand(backend, subscripts, *operands, rank, niter):
     ndims = [operand.ndim for operand in operands]
     expr = einstr.parse_einsumsvd(subscripts, ndims)
     expr_A, einsvd_expr = einstr.split_einsumsvd(expr)

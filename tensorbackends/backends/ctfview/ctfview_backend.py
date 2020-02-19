@@ -77,18 +77,35 @@ class CTFViewBackend(Backend):
         expr = einstr.parse_einsum(subscripts, ndims)
         return self._einsum(expr, operands)
 
-    def einsvd(self, subscripts, a):
+    def einsvd_reduced(self, subscripts, a, rank=None):
         if not isinstance(a, self.tensor):
             raise TypeError('the input should be {}'.format(self.tensor.__qualname__))
         expr = einstr.parse_einsvd(subscripts, a.ndim)
-        return self._einsvd(expr, a)
+        return self._einsvd_reduced(expr, a, rank)
 
-    def einsumsvd(self, subscripts, *operands):
+    def einsvd_rand(self, subscripts, a, rank, niter=1, oversamp=5):
+        if not isinstance(a, self.tensor):
+            raise TypeError('the input should be {}'.format(self.tensor.__qualname__))
+        expr = einstr.parse_einsvd(subscripts, a.ndim)
+        return self._einsvd_rand(expr, a, rank, niter, oversamp)
+
+    def einsumsvd_reduced(self, subscripts, *operands, rank=None):
         if not all(isinstance(operand, self.tensor) for operand in operands):
             raise TypeError('all operands should be {}'.format(self.tensor.__qualname__))
         ndims = [operand.ndim for operand in operands]
         expr = einstr.parse_einsumsvd(subscripts, ndims)
-        return self._einsumsvd(expr, operands)
+        einsum_expr, einsvd_expr = einstr.split_einsumsvd(expr)
+        a = self._einsum(einsum_expr, operands)
+        return self._einsvd_reduced(einsvd_expr, a, rank)
+
+    def einsumsvd_rand(self, subscripts, *operands, rank, niter=1, oversamp=5):
+        if not all(isinstance(operand, self.tensor) for operand in operands):
+            raise TypeError('all operands should be {}'.format(self.tensor.__qualname__))
+        ndims = [operand.ndim for operand in operands]
+        expr = einstr.parse_einsumsvd(subscripts, ndims)
+        einsum_expr, einsvd_expr = einstr.split_einsumsvd(expr)
+        a = self._einsum(einsum_expr, operands)
+        return self._einsvd_rand(einsvd_expr, a, rank, niter, oversamp)
 
     def isclose(self, a, b, *, rtol=1e-9, atol=0.0):
         if isinstance(a, self.tensor): a.match_indices()
@@ -157,7 +174,7 @@ class CTFViewBackend(Backend):
             else:
                 return result
 
-    def _einsvd(self, expr, a):
+    def _einsvd_reduced(self, expr, a, rank):
         expanded_expr = indices_utils.expand_einsvd(expr, a.indices)
         if expanded_expr is None:
             a.match_indices()
@@ -166,12 +183,23 @@ class CTFViewBackend(Backend):
         u, s, vh = a.tsr.i(expr.inputs[0].indices_string).svd(
             expr.outputs[0].indices_string,
             expr.outputs[1].indices_string,
+            rank=rank,
         )
         u_newshape = expr.outputs[0].newshape(u.shape)
         vh_newshape = expr.outputs[1].newshape(vh.shape)
         return self.tensor(u).reshape(*u_newshape), self.tensor(s), self.tensor(vh).reshape(*vh_newshape)
 
-    def _einsumsvd(self, expr, operands):
-        einsum_expr, einsvd_expr = einstr.split_einsumsvd(expr)
-        a = self._einsum(einsum_expr, operands)
-        return self._einsvd(einsvd_expr, a)
+    def _einsvd_rand(self, expr, a, rank, niter, oversamp):
+        expanded_expr = indices_utils.expand_einsvd(expr, a.indices)
+        if expanded_expr is None:
+            a.match_indices()
+        else:
+            expr = expanded_expr
+        u, s, vh = a.tsr.i(expr.inputs[0].indices_string).svd(
+            expr.outputs[0].indices_string,
+            expr.outputs[1].indices_string,
+            use_svd_rand=True, rank=rank, num_iter=niter, oversamp=oversamp,
+        )
+        u_newshape = expr.outputs[0].newshape(u.shape)
+        vh_newshape = expr.outputs[1].newshape(vh.shape)
+        return self.tensor(u).reshape(*u_newshape), self.tensor(s), self.tensor(vh).reshape(*vh_newshape)

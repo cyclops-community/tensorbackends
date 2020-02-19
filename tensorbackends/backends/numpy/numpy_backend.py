@@ -71,18 +71,49 @@ class NumPyBackend(Backend):
         expr = einstr.parse_einsum(subscripts, ndims)
         return self._einsum(expr, operands)
 
-    def einsvd(self, subscripts, a):
+    def einsvd_reduced(self, subscripts, a, rank=None):
         if not isinstance(a, self.tensor):
             raise TypeError('the input should be {}'.format(self.tensor.__qualname__))
         expr = einstr.parse_einsvd(subscripts, a.ndim)
-        return self._einsvd(expr, a)
+        def svd_func(matrix):
+            u, s, vh = self.svd(matrix)
+            if rank is not None and s.shape[0] > rank:
+                u, s, vh = u[:,:rank], s[:rank], vh[:rank,:]
+            return u, s, vh
+        return self._einsvd(expr, a, svd_func)
 
-    def einsumsvd(self, subscripts, *operands):
+    def einsvd_rand(self, subscripts, a, rank, niter=1, oversamp=5):
+        if not isinstance(a, self.tensor):
+            raise TypeError('the input should be {}'.format(self.tensor.__qualname__))
+        expr = einstr.parse_einsvd(subscripts, a.ndim)
+        def svd_func(matrix):
+            return self.rsvd(matrix, rank, niter, oversamp)
+        return self._einsvd(expr, a, svd_func)
+
+    def einsumsvd_reduced(self, subscripts, *operands, rank=None):
         if not all(isinstance(operand, self.tensor) for operand in operands):
             raise TypeError('all operands should be {}'.format(self.tensor.__qualname__))
         ndims = [operand.ndim for operand in operands]
         expr = einstr.parse_einsumsvd(subscripts, ndims)
-        return self._einsumsvd(expr, operands)
+        einsum_expr, einsvd_expr = einstr.split_einsumsvd(expr)
+        a = self._einsum(einsum_expr, operands)
+        def svd_func(matrix):
+            u, s, vh = self.svd(matrix)
+            if rank is not None and s.shape[0] > rank:
+                u, s, vh = u[:,:rank], s[:rank], vh[:rank,:]
+            return u, s, vh
+        return self._einsvd(einsvd_expr, a, svd_func)
+
+    def einsumsvd_rand(self, subscripts, *operands, rank, niter=1, oversamp=5):
+        if not all(isinstance(operand, self.tensor) for operand in operands):
+            raise TypeError('all operands should be {}'.format(self.tensor.__qualname__))
+        ndims = [operand.ndim for operand in operands]
+        expr = einstr.parse_einsumsvd(subscripts, ndims)
+        einsum_expr, einsvd_expr = einstr.split_einsumsvd(expr)
+        a = self._einsum(einsum_expr, operands)
+        def svd_func(matrix):
+            return self.rsvd(matrix, rank, niter, oversamp)
+        return self._einsvd(einsvd_expr, a, svd_func)
 
     def isclose(self, a, b, *, rtol=1e-9, atol=0.0):
         a = a.tsr if isinstance(b, NumPyTensor) else b
@@ -141,7 +172,7 @@ class NumPyBackend(Backend):
         else:
             return result
 
-    def _einsvd(self, expr, a):
+    def _einsvd(self, expr, a, svd_func):
         newindex = (expr.output_indices - expr.input_indices).pop()
         prod = lambda iterable: functools.reduce(operator.mul, iterable, 1)
         axis_of_index = {index: axis for axis, index in enumerate(expr.inputs[0])}
@@ -151,18 +182,13 @@ class NumPyBackend(Backend):
         a_matrix_axes = [*u_axes_from_a, *vh_axes_from_a]
         a_matrix_shape = (prod(a.shape[axis] for axis in u_axes_from_a), -1)
         a_matrix = a.transpose(*a_matrix_axes).reshape(*a_matrix_shape)
-        u, s, vh = la.svd(a_matrix, full_matrices=False)
+        u, s, vh = svd_func(a_matrix)
         # form u
-        u = u.reshape(*(a.shape[axis] for axis in u_axes_from_a), len(s))
+        u = u.reshape(*(a.shape[axis] for axis in u_axes_from_a), s.shape[0])
         u = np.moveaxis(u, -1, expr.outputs[0].find(newindex))
         u = u.reshape(*expr.outputs[0].newshape(u.shape))
         # form vh
-        vh = vh.reshape(len(s), *(a.shape[axis] for axis in vh_axes_from_a))
+        vh = vh.reshape(s.shape[0], *(a.shape[axis] for axis in vh_axes_from_a))
         vh = np.moveaxis(vh, 0, expr.outputs[1].find(newindex))
         vh = vh.reshape(*expr.outputs[1].newshape(vh.shape))
         return self.tensor(u), self.tensor(s), self.tensor(vh)
-
-    def _einsumsvd(self, expr, operands):
-        einsum_expr, einsvd_expr = einstr.split_einsumsvd(expr)
-        a = self._einsum(einsum_expr, operands)
-        return self._einsvd(einsvd_expr, a)

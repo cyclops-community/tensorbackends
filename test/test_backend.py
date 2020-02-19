@@ -89,6 +89,19 @@ class BackendTest(unittest.TestCase):
         self.assertTrue(tb.allclose(v, v_true))
 
 
+    def test_einsvd_options(self, tb):
+        from tensorbackends.interface.options import ReducedSVD, RandomizedSVD
+        a = tb.astensor([[1,0,0,0],[0,2,0,0],[0,0,30,0],[0,0,0,40]], dtype=float).reshape(2,2,2,2)
+        s_true = tb.astensor([40,30])
+        for option in [ReducedSVD(rank=2), RandomizedSVD(rank=2, niter=5, oversamp=1)]:
+            with self.subTest(option=option):
+                u, s, v = tb.einsvd('ijkl->(ij)s,s(kl)', a, option=option)
+                self.assertEqual(u.shape, (4,2))
+                self.assertEqual(s.shape, (2,))
+                self.assertEqual(v.shape, (2,4))
+                self.assertTrue(tb.allclose(s, s_true))
+
+
     def test_einsumsvd(self, tb):
         a = tb.astensor([[0,2,0,0],[1,0,0,0],[0,0,3,0],[0,0,0,4]], dtype=float)
         p = tb.astensor([[0,1,0,0],[1,0,0,0],[0,0,1,0],[0,0,0,1]], dtype=float)
@@ -104,6 +117,31 @@ class BackendTest(unittest.TestCase):
         self.assertTrue(tb.allclose(v, v_true))
 
 
+    def test_einsumsvd_options(self, tb):
+        from tensorbackends.interface.options import ReducedSVD, RandomizedSVD, ImplicitRandomizedSVD
+        a = tb.astensor([[0,2,0,0],[1,0,0,0],[0,0,30,0],[0,0,0,40]], dtype=float)
+        p = tb.astensor([[0,1,0,0],[1,0,0,0],[0,0,1,0],[0,0,0,1]], dtype=float)
+        s_true = tb.astensor([40,30])
+        options = [
+            ReducedSVD(rank=2),
+            RandomizedSVD(rank=2, niter=3, oversamp=1),
+            ImplicitRandomizedSVD(rank=2, niter=5)
+        ]
+        for option in options:
+            with self.subTest(option=option):
+                u, s, v = tb.einsumsvd('ij,jk->is,sk', p, a, option=option)
+                self.assertEqual(u.shape, (4,2))
+                self.assertEqual(s.shape, (2,))
+                self.assertEqual(v.shape, (2,4))
+                self.assertTrue(tb.allclose(s, s_true))
+
+
+    def test_inv(self, tb):
+        a = tb.astensor([[1,2],[3,4]], dtype=float)
+        b = tb.inv(a)
+        self.assertTrue(tb.allclose(a @ b, tb.eye(2), atol=1e-8))
+
+
     def test_rsvd(self, tb):
         a = tb.astensor([[1,0,0,0],[0,1,0,0],[0,0,10,0],[0,0,0,20]], dtype=float)
         u, s, vh = tb.rsvd(a, rank=2, niter=2, oversamp=1)
@@ -112,35 +150,3 @@ class BackendTest(unittest.TestCase):
         self.assertEqual(vh.shape, (2,4))
         s_true = tb.astensor([20, 10])
         self.assertTrue(tb.allclose(s, s_true))
-
-
-    def test_einsumsvd_rand_1(self, tb):
-        a = tb.astensor([[0,2,0,0],[1,0,0,0],[0,0,3,0],[0,0,0,4]], dtype=float)
-        p = tb.astensor([[0,1,0,0],[1,0,0,0],[0,0,1,0],[0,0,0,1]], dtype=float)
-        rank = 4
-        u, s, v = tb.einsumsvd_rand('ij,jk->is,sk', p, a, rank=rank)
-        self.assertEqual(u.shape, (4,4))
-        self.assertEqual(s.shape, (4,))
-        self.assertEqual(v.shape, (4,4))
-        u_true = tb.astensor([[0,0,0,1],[0,0,1,0],[0,1,0,0],[1,0,0,0]])
-        s_true = tb.astensor([4,3,2,1])
-        v_true = tb.astensor([[0,0,0,1],[0,0,1,0],[0,1,0,0],[1,0,0,0]])
-        self.assertTrue(tb.allclose(s, s_true))
-        self.assertTrue(tb.allclose(u @ v, u_true @ v_true, atol=1e-12))
-
-
-    def test_einsumsvd_rand_2(self, tb):
-        A1 = tb.random.random((3,2,7))
-        A2 = tb.random.random((7,4,3,5))
-        A3 = tb.random.random((5,2,2,3))
-        A4 = tb.random.random((3,2,3))
-        A = tb.einsum('ijr,rkls,smnt,tpq->ikmpjlnq', A1, A2, A3, A4)
-        u, s, v = tb.einsumsvd_rand('ijr,rkls,smnt,tpq->ikmpy,yjlnq', A1, A2, A3, A4, rank=20, niter=2)
-        mu, ms, mv = tb.svd(A.reshape(48, 36))
-        self.assertTrue(tb.allclose(s[:5], ms[:5]))
-
-
-    def test_inv(self, tb):
-        a = tb.astensor([[1,2],[3,4]], dtype=float)
-        b = tb.inv(a)
-        self.assertTrue(tb.allclose(a @ b, tb.eye(2), atol=1e-8))
