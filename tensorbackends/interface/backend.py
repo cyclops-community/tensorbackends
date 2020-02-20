@@ -54,6 +54,9 @@ class Backend:
     def copy(self, a):
         raise NotImplementedError()
 
+    def moveaxis(self, a, source, destination):
+        return extensions.moveaxis(self, a, source, destination)
+
     def einsum(self, subscripts, *operands):
         raise NotImplementedError()
 

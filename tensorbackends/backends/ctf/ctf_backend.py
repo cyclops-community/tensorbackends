@@ -3,6 +3,7 @@ This module implements the ctf backend.
 """
 
 import ctf
+import numpy as np
 
 from ...interface import Backend
 from ...utils import einstr
@@ -163,16 +164,24 @@ class CTFBackend(Backend):
         vh_newshape = expr.outputs[1].newshape(vh.shape)
         if u_newshape != u.shape: u = u.reshape(*u_newshape)
         if vh_newshape != vh.shape: vh = vh.reshape(*vh_newshape)
-        return self.tensor(u), self.tensor(s), self.tensor(vh)
+        return self.tensor(u), self.tensor(ctf.real(s)), self.tensor(vh)
 
     def _einsvd_rand(self, expr, a, rank, niter, oversamp):
-        u, s, vh = a.tsr.i(expr.inputs[0].indices_string).svd(
-            expr.outputs[0].indices_string,
-            expr.outputs[1].indices_string,
-            use_svd_rand=True, rank=rank, num_iter=niter, oversamp=oversamp,
-        )
-        u_newshape = expr.outputs[0].newshape(u.shape)
-        vh_newshape = expr.outputs[1].newshape(vh.shape)
-        if u_newshape != u.shape: u = u.reshape(*u_newshape)
-        if vh_newshape != vh.shape: vh = vh.reshape(*vh_newshape)
-        return self.tensor(u), self.tensor(s), self.tensor(vh)
+        newindex = (expr.output_indices - expr.input_indices).pop()
+        axis_of_index = {index: axis for axis, index in enumerate(expr.inputs[0])}
+        u_axes_from_a = [axis_of_index[index] for index in expr.outputs[0] if index != newindex]
+        vh_axes_from_a = [axis_of_index[index] for index in expr.outputs[1] if index != newindex]
+        # form matrix of a
+        a_matrix_axes = [*u_axes_from_a, *vh_axes_from_a]
+        a_matrix_shape = (np.prod([a.shape[axis] for axis in u_axes_from_a]), -1)
+        a_matrix = a.transpose(*a_matrix_axes).reshape(*a_matrix_shape)
+        u, s, vh = self.rsvd(a_matrix, rank, niter, oversamp)
+        # form u
+        u = u.reshape(*(a.shape[axis] for axis in u_axes_from_a), s.shape[0])
+        u = self.moveaxis(u, -1, expr.outputs[0].find(newindex))
+        u = u.reshape(*expr.outputs[0].newshape(u.shape))
+        # form vh
+        vh = vh.reshape(s.shape[0], *(a.shape[axis] for axis in vh_axes_from_a))
+        vh = self.moveaxis(vh, 0, expr.outputs[1].find(newindex))
+        vh = vh.reshape(*expr.outputs[1].newshape(vh.shape))
+        return u, s, vh

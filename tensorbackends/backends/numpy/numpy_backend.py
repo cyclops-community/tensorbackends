@@ -185,10 +185,10 @@ class NumPyBackend(Backend):
         u, s, vh = svd_func(a_matrix)
         # form u
         u = u.reshape(*(a.shape[axis] for axis in u_axes_from_a), s.shape[0])
-        u = np.moveaxis(u, -1, expr.outputs[0].find(newindex))
+        u = self.moveaxis(u, -1, expr.outputs[0].find(newindex))
         u = u.reshape(*expr.outputs[0].newshape(u.shape))
         # form vh
         vh = vh.reshape(s.shape[0], *(a.shape[axis] for axis in vh_axes_from_a))
-        vh = np.moveaxis(vh, 0, expr.outputs[1].find(newindex))
+        vh = self.moveaxis(vh, 0, expr.outputs[1].find(newindex))
         vh = vh.reshape(*expr.outputs[1].newshape(vh.shape))
-        return self.tensor(u), self.tensor(s), self.tensor(vh)
+        return u, s, vh

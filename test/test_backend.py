@@ -142,14 +142,26 @@ class BackendTest(unittest.TestCase):
                 self.assertTrue(tb.allclose(usv, low_rank, atol=1e-9))
 
 
+    def test_einsumsvd_rand(self, tb):
+        A1 = tb.random.random((2,3)) + tb.random.random((2,3)) * 1j
+        A2 = tb.random.random((5,2,3)) + tb.random.random((5,2,3)) * 1j
+        A3 = tb.random.random((3,2,3)) + tb.random.random((3,2,3)) * 1j
+        A = tb.einsum("ij,mnk,kpq->impjnq", A1, A2, A3)
+        u, s, v = tb.einsumsvd_rand('ij,mnk,kpq->(imp)y,y(jnq)', A1, A2, A3, rank=8, niter=8)
+        mu, ms, mv = tb.svd(A.reshape(20, 18))
+        usv = tb.einsum('is,s,sj->ij', u[:,:4], s[:4], v[:4,:])
+        musv = tb.einsum('is,s,sj->ij', mu[:,:4], ms[:4], mv[:4:])
+        self.assertTrue(tb.allclose(s[:4], ms[:4]))
+        self.assertTrue(tb.allclose(usv, musv))
+
+
     def test_einsumsvd_implicit_rand(self, tb):
-        A1 = tb.random.random((3,2,7)) + tb.random.random((3,2,7)) * 1j
-        A2 = tb.random.random((7,4,3,5)) + tb.random.random((7,4,3,5)) * 1j
-        A3 = tb.random.random((5,2,2,3)) + tb.random.random((5,2,2,3)) * 1j
-        A4 = tb.random.random((3,2,3)) + tb.random.random((3,2,3)) * 1j
-        A = tb.einsum("ijr,rkls,smnt,tpq->ikmpjlnq", A1, A2, A3, A4)
-        u, s, v = tb.einsumsvd_implicit_rand('ijr,rkls,smnt,tpq->(ikmp)y,y(jlnq)', A1, A2, A3, A4, rank=16, niter=4)
-        mu, ms, mv = tb.svd(A.reshape(48, 36))
+        A1 = tb.random.random((2,3)) + tb.random.random((2,3)) * 1j
+        A2 = tb.random.random((5,2,3)) + tb.random.random((5,2,3)) * 1j
+        A3 = tb.random.random((3,2,3)) + tb.random.random((3,2,3)) * 1j
+        A = tb.einsum("ij,mnk,kpq->impjnq", A1, A2, A3)
+        u, s, v = tb.einsumsvd_implicit_rand('ij,mnk,kpq->(imp)y,y(jnq)', A1, A2, A3, rank=8, niter=8)
+        mu, ms, mv = tb.svd(A.reshape(20, 18))
         usv = tb.einsum('is,s,sj->ij', u[:,:4], s[:4], v[:4,:])
         musv = tb.einsum('is,s,sj->ij', mu[:,:4], ms[:4], mv[:4:])
         self.assertTrue(tb.allclose(s[:4], ms[:4]))
@@ -164,7 +176,7 @@ class BackendTest(unittest.TestCase):
 
     def test_rsvd(self, tb):
         a = tb.astensor([[1,0,0,0],[0,1,0,0],[0,0,10,0],[0,0,0,20]], dtype=float)
-        u, s, vh = tb.rsvd(a, rank=2, niter=2, oversamp=1)
+        u, s, vh = tb.rsvd(a, rank=2, niter=4, oversamp=1)
         self.assertEqual(u.shape, (4,2))
         self.assertEqual(s.shape, (2,))
         self.assertEqual(vh.shape, (2,4))
