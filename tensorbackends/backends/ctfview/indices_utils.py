@@ -127,7 +127,7 @@ def expand_einsvd(expr, input_indices):
                 if term.indices[j] in index_mappping:
                     mapped_index = index_mappping[term.indices[j]]
                     new_term_indices.extend(mapped_index)
-                    if len(mapped_index) > 1 and not fusing:
+                    if len(mapped_index) != 1 and not fusing:
                         new_term_fusing.append((offset, offset + len(mapped_index)))
                     offset += len(mapped_index)
                 else:
