@@ -82,13 +82,20 @@ class CTFViewBackend(Backend):
         if not isinstance(a, self.tensor):
             raise TypeError('the input should be {}'.format(self.tensor.__qualname__))
         expr = einstr.parse_einsvd(subscripts, a.ndim)
-        return self._einsvd_reduced(expr, a, rank)
+        def svd_func(matrix):
+            u, s, vh = self.svd(matrix)
+            if rank is not None and s.shape[0] > rank:
+                u, s, vh = u[:,:rank], s[:rank], vh[:rank,:]
+            return u, s, vh
+        return self._einsvd(expr, a, svd_func)
 
     def einsvd_rand(self, subscripts, a, rank, niter=1, oversamp=5):
         if not isinstance(a, self.tensor):
             raise TypeError('the input should be {}'.format(self.tensor.__qualname__))
         expr = einstr.parse_einsvd(subscripts, a.ndim)
-        return self._einsvd_rand(expr, a, rank, niter, oversamp)
+        def svd_func(matrix):
+            return self.rsvd(matrix, rank, niter, oversamp)
+        return self._einsvd(expr, a, svd_func)
 
     def einsumsvd_reduced(self, subscripts, *operands, rank=None):
         if not all(isinstance(operand, self.tensor) for operand in operands):
@@ -97,7 +104,12 @@ class CTFViewBackend(Backend):
         expr = einstr.parse_einsumsvd(subscripts, ndims)
         einsum_expr, einsvd_expr = einstr.split_einsumsvd(expr)
         a = self._einsum(einsum_expr, operands)
-        return self._einsvd_reduced(einsvd_expr, a, rank)
+        def svd_func(matrix):
+            u, s, vh = self.svd(matrix)
+            if rank is not None and s.shape[0] > rank:
+                u, s, vh = u[:,:rank], s[:rank], vh[:rank,:]
+            return u, s, vh
+        return self._einsvd(einsvd_expr, a, svd_func)
 
     def einsumsvd_rand(self, subscripts, *operands, rank, niter=1, oversamp=5):
         if not all(isinstance(operand, self.tensor) for operand in operands):
@@ -106,7 +118,9 @@ class CTFViewBackend(Backend):
         expr = einstr.parse_einsumsvd(subscripts, ndims)
         einsum_expr, einsvd_expr = einstr.split_einsumsvd(expr)
         a = self._einsum(einsum_expr, operands)
-        return self._einsvd_rand(einsvd_expr, a, rank, niter, oversamp)
+        def svd_func(matrix):
+            return self.rsvd(matrix, rank, niter, oversamp)
+        return self._einsvd(einsvd_expr, a, svd_func)
 
     def isclose(self, a, b, *, rtol=1e-9, atol=0.0):
         if isinstance(a, self.tensor): a.match_indices()
@@ -175,36 +189,16 @@ class CTFViewBackend(Backend):
             else:
                 return result
 
-    def _einsvd_reduced(self, expr, a, rank):
-        expanded_expr = indices_utils.expand_einsvd(expr, a.indices)
-        if expanded_expr is None:
-            a.match_indices()
-        else:
-            expr = expanded_expr
-        u, s, vh = a.tsr.i(expr.inputs[0].indices_string).svd(
-            expr.outputs[0].indices_string,
-            expr.outputs[1].indices_string,
-            rank=rank,
-        )
-        u_newshape = expr.outputs[0].newshape(u.shape)
-        vh_newshape = expr.outputs[1].newshape(vh.shape)
-        return self.tensor(u).reshape(*u_newshape), self.tensor(ctf.real(s)), self.tensor(vh).reshape(*vh_newshape)
-
-    def _einsvd_rand(self, expr, a, rank, niter, oversamp):
-        expanded_expr = indices_utils.expand_einsvd(expr, a.indices)
-        if expanded_expr is None:
-            a.match_indices()
-        else:
-            expr = expanded_expr
+    def _einsvd(self, expr, a, svd_func):
         newindex = (expr.output_indices - expr.input_indices).pop()
         axis_of_index = {index: axis for axis, index in enumerate(expr.inputs[0])}
         u_axes_from_a = [axis_of_index[index] for index in expr.outputs[0] if index != newindex]
         vh_axes_from_a = [axis_of_index[index] for index in expr.outputs[1] if index != newindex]
         # form matrix of a
         a_matrix_axes = [*u_axes_from_a, *vh_axes_from_a]
-        a_matrix_shape = (np.prod([a.shape[axis] for axis in u_axes_from_a]), -1)
+        a_matrix_shape = (indices_utils.prod(a.shape[axis] for axis in u_axes_from_a), -1)
         a_matrix = a.transpose(*a_matrix_axes).reshape(*a_matrix_shape)
-        u, s, vh = self.rsvd(a_matrix, rank, niter, oversamp)
+        u, s, vh = svd_func(a_matrix)
         # form u
         u = u.reshape(*(a.shape[axis] for axis in u_axes_from_a), s.shape[0])
         u = self.moveaxis(u, -1, expr.outputs[0].find(newindex))
