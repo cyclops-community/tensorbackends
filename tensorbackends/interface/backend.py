@@ -74,6 +74,9 @@ class Backend:
     def einsvd_rand(self, subscripts, a, rank, niter=1, oversamp=5):
         raise NotImplementedError()
 
+    def einqr(self, subscripts, a):
+        return extensions.einqr(self, subscripts, a)
+
     def einsumsvd(self, subscripts, *operands, option=options.ReducedSVD()):
         if isinstance(option, options.ReducedSVD):
             return self.einsumsvd_reduced(subscripts, *operands, rank=option.rank)
