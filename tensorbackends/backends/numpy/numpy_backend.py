@@ -6,6 +6,7 @@ import functools, operator
 
 import numpy as np
 import numpy.linalg as la
+from cachetools import cached, LFUCache
 
 from ...interface import Backend
 from ...utils import einstr
@@ -169,7 +170,11 @@ class NumPyBackend(Backend):
             return result
 
     def _einsum(self, expr, operands):
-        result = np.einsum(expr.indices_string, *(operand.tsr for operand in operands), optimize='greedy')
+        subscripts = expr.indices_string
+        operands = [operand.tsr for operand in operands]
+        shapes = [operand.shape for operand in operands]
+        optimize = _einsum_path(subscripts, shapes, operands) if len(operands) > 2 else False
+        result = np.einsum(subscripts, *operands, optimize=optimize)
         if isinstance(result, np.ndarray) and result.ndim != 0:
             newshape = expr.outputs[0].newshape(result.shape)
             result = result.reshape(*newshape)
@@ -199,3 +204,7 @@ class NumPyBackend(Backend):
         vh = self.moveaxis(vh, 0, expr.outputs[1].find(newindex))
         vh = vh.reshape(*expr.outputs[1].newshape(vh.shape))
         return u, s, vh
+
+@cached(cache=LFUCache(256), key=lambda subscripts, shapes, operands: (subscripts, tuple(shapes)))
+def _einsum_path(subscripts, shapes, operands):
+    return np.einsum_path(subscripts, *operands, optimize='greedy')[0]
