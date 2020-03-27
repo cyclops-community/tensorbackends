@@ -172,8 +172,7 @@ class NumPyBackend(Backend):
     def _einsum(self, expr, operands):
         subscripts = expr.indices_string
         operands = [operand.tsr for operand in operands]
-        shapes = [operand.shape for operand in operands]
-        optimize = _einsum_path(subscripts, shapes, operands) if len(operands) > 2 else False
+        optimize = _einsum_path(subscripts, operands) if len(operands) > 2 else False
         result = np.einsum(subscripts, *operands, optimize=optimize)
         if isinstance(result, np.ndarray) and result.ndim != 0:
             newshape = expr.outputs[0].newshape(result.shape)
@@ -205,6 +204,6 @@ class NumPyBackend(Backend):
         vh = vh.reshape(*expr.outputs[1].newshape(vh.shape))
         return u, s, vh
 
-@cached(cache=LFUCache(256), key=lambda subscripts, shapes, operands: (subscripts, tuple(shapes)))
-def _einsum_path(subscripts, shapes, operands):
+@cached(cache=LFUCache(256), key=lambda subscripts, operands: (subscripts, *map(np.shape, operands)))
+def _einsum_path(subscripts, operands):
     return np.einsum_path(subscripts, *operands, optimize='greedy')[0]
