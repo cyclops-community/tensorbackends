@@ -54,6 +54,12 @@ class Backend:
     def copy(self, a):
         raise NotImplementedError()
 
+    def save(self, tsr, filename):
+        raise NotImplementedError()
+
+    def load(self, filename):
+        raise NotImplementedError()
+
     def moveaxis(self, a, source, destination):
         return extensions.moveaxis(self, a, source, destination)
 
