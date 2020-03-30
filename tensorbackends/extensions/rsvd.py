@@ -6,8 +6,9 @@ def rsvd(backend, a, rank, niter, oversamp):
     # find subspace
     q = backend.random.uniform(low=-1.0, high=1.0, size=(n, r)).astype(dtype)
     a_H = a.H
+    a_H_a = a_H @ a
     for i in range(niter):
-        q = a_H @ (a @ q)
+        q = a_H_a @ q
         q, _ = backend.qr(q)
     q = a @ q
     q, _ = backend.qr(q)
