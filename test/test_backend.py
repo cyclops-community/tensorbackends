@@ -129,7 +129,8 @@ class BackendTest(unittest.TestCase):
         options = [
             ReducedSVD(rank=2),
             RandomizedSVD(rank=2, niter=2, oversamp=1),
-            ImplicitRandomizedSVD(rank=2, niter=2)
+            ImplicitRandomizedSVD(rank=2, niter=2, orth_method='qr'),
+            ImplicitRandomizedSVD(rank=2, niter=2, orth_method='local_gram'),
         ]
         for option in options:
             with self.subTest(option=option):

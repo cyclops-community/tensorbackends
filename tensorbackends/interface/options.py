@@ -25,6 +25,7 @@ class RandomizedSVD(Option):
         self.oversamp = oversamp
 
 class ImplicitRandomizedSVD(Option):
-    def __init__(self, rank, niter=1):
+    def __init__(self, rank, niter=1, orth_method='qr'):
         self.rank = rank
         self.niter = niter
+        self.orth_method = orth_method

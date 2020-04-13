@@ -1,8 +1,17 @@
 from ..utils import einstr
+from string import ascii_letters as chars
 import numpy as np
+import scipy.linalg as la
 
 
-def einsumsvd_implicit_rand(backend, subscripts, *operands, rank, niter):
+def einsumsvd_implicit_rand(backend, subscripts, *operands, rank, niter, orth_method):
+    if orth_method == 'qr':
+        orthogonalize = orthogonalize_qr
+    elif orth_method == 'local_gram':
+        orthogonalize = orthogonalize_local_gram
+    else:
+        raise ValueError('unknown orthogonalization method: {}'.format(orth_method))
+
     ndims = [operand.ndim for operand in operands]
     expr = einstr.parse_einsumsvd(subscripts, ndims)
     expr_A, einsvd_expr = einstr.split_einsumsvd(expr)
@@ -60,11 +69,9 @@ def einsumsvd_implicit_rand(backend, subscripts, *operands, rank, niter):
     for iter in range(niter):
         op_YT = apply_A(backend,expr_A,ops_A_conj,term_X,op_X,term_YT)
         op_X = apply_A(backend,expr_A,ops_A,term_YT,op_YT,term_X)
-        mat_X, _ = backend.qr(op_X.reshape(np.prod(op_X.shape)//r, r))
-        op_X = mat_X.reshape(*op_X.shape)
+        op_X = orthogonalize(backend, op_X)
     op_YT = apply_A(backend,expr_A,ops_A_conj,term_X,op_X,term_YT)
-    mat_VT, _ = backend.qr(op_YT.reshape(np.prod(op_YT.shape)//r, r))
-    op_YT = mat_VT.reshape(*op_YT.shape)
+    op_YT = orthogonalize(backend, op_YT)
 
     op_X = apply_A(backend,expr_A,ops_A,term_YT,op_YT,term_X)
     mat_U, S, mat_XVT = backend.svd(op_X.reshape(np.prod(op_X.shape)//r, r))
@@ -103,3 +110,35 @@ def get_shape(expr, op_inputs, output):
                 if out_str[k] == idx[j]:
                     out_shape[k] = shape[j]
     return out_shape
+
+
+def orthogonalize_qr(backend, a):
+    a_matrix, _ = backend.qr(a.reshape(-1, a.shape[-1]))
+    return a_matrix.reshape(*a.shape)
+
+
+def orthogonalize_local_gram(backend, a):
+    remaining_indices = ''.join(chars[i] for i in range(a.ndim-1))
+    gram_subscripts = '{}{},{}{}->{}{}'.format(
+        remaining_indices, chars[a.ndim],
+        remaining_indices, chars[a.ndim+1],
+        chars[a.ndim], chars[a.ndim+1],
+    )
+    gram_a = backend.einsum(gram_subscripts, a.conj(), a)
+
+    # local
+    gram_a = gram_a.numpy()
+    w, v = la.eigh(gram_a, overwrite_a=True)
+    s = np.clip(w, 0, None) ** 0.5
+    s_pinv = np.divide(1, s, out=np.zeros_like(s), where=s!=0)
+    r_inv = np.einsum('j,ij->ij', s_pinv, v)
+
+    r_inv = backend.astensor(r_inv)
+    orthogonalize_subscripts = '{}{},{}{}->{}{}'.format(
+        remaining_indices, chars[a.ndim],
+        chars[a.ndim], chars[a.ndim+1],
+        remaining_indices, chars[a.ndim+1],
+    )
+    q = backend.einsum(orthogonalize_subscripts, a, r_inv)
+
+    return q
