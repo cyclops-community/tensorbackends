@@ -63,6 +63,13 @@ class CTFViewBackend(Backend):
     def copy(self, a):
         return a.copy()
 
+    def save(self, tsr, filename):
+        with open(filename, 'w+b') as file:
+            np.save(file, tsr.numpy(), allow_pickle=False)
+
+    def load(self, filename):
+        return self.astensor(np.load(filename))
+
     def reshape(self, a, newshape):
         return a.reshape(*newshape)
 

@@ -62,6 +62,13 @@ class CTFBackend(Backend):
     def copy(self, a):
         return a.copy()
 
+    def save(self, tsr, filename):
+        with open(filename, 'w+b') as file:
+            np.save(file, tsr.numpy(), allow_pickle=False)
+
+    def load(self, filename):
+        return self.astensor(np.load(filename))
+
     def einsum(self, subscripts, *operands):
         if not all(isinstance(operand, self.tensor) for operand in operands):
             raise TypeError('all operands should be {}'.format(self.tensor.__qualname__))
