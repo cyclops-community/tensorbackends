@@ -3,9 +3,6 @@ TensorBackends
 
 A uniform interface for tensor libraries like NumPy, CTF, etc.
 
-**Notice: This project is under construction. Many functionalities are not
-supported yet.**
-
 
 Backends
 --------
