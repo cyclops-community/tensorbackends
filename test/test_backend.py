@@ -43,6 +43,20 @@ class BackendTest(unittest.TestCase):
                 self.assertTrue(tb.allclose(a, 1))
                 self.assertEqual(a.dtype, dtype)
 
+    def test_hstack(self, tb):
+        a = tb.zeros((2,3))
+        b = tb.zeros((2,3))
+        c = tb.hstack((a,b))
+        self.assertIsInstance(c, tb.tensor)
+        self.assertEqual(c.shape, (2,6))
+
+    def test_vstack(self, tb):
+        a = tb.zeros((2,3))
+        b = tb.zeros((2,3))
+        c = tb.vstack((a,b))
+        self.assertIsInstance(c, tb.tensor)
+        self.assertEqual(c.shape, (4,3))
+
     def test_einsum(self, tb):
         a = tb.astensor([1,2,3,4,5,6]).reshape(1,3,2)
         b = tb.astensor([1,2,3,4,5,6]).reshape(2,3,1,1)

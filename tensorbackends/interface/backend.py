@@ -63,6 +63,12 @@ class Backend:
     def moveaxis(self, a, source, destination):
         return extensions.moveaxis(self, a, source, destination)
 
+    def hstack(self, tensors):
+        raise NotImplementedError()
+
+    def vstack(self, tensors):
+        raise NotImplementedError()
+
     def einsum(self, subscripts, *operands):
         raise NotImplementedError()
 

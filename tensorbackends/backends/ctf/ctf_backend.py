@@ -69,6 +69,12 @@ class CTFBackend(Backend):
     def load(self, filename):
         return self.astensor(np.load(filename))
 
+    def hstack(self, tensors):
+        return self.tensor(ctf.hstack(tuple(tsr.unwrap() for tsr in tensors)))
+
+    def vstack(self, tensors):
+        return self.tensor(ctf.vstack(tuple(tsr.unwrap() for tsr in tensors)))
+
     def einsum(self, subscripts, *operands):
         if not all(isinstance(operand, self.tensor) for operand in operands):
             raise TypeError('all operands should be {}'.format(self.tensor.__qualname__))
