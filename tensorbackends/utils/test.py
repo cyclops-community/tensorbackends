@@ -5,7 +5,7 @@ This module implements test utilities.
 import functools, inspect, unittest
 
 
-def test_with_backend(required=['numpy'], optional=['ctf', 'ctfview']):
+def test_with_backend(required=['numpy'], optional=['ctf', 'ctfview', 'cupy']):
     from .. import backends
     def instantiate_test_method(name, method, tb_name):
         new_name = '{}_{}'.format(name, tb_name)
