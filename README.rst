@@ -1,12 +1,13 @@
 TensorBackends
 ==============
 
-A uniform interface for tensor libraries like NumPy, CTF, etc.
+A uniform interface for tensor libraries like NumPy, CuPy, CTF, etc.
 
 
 Backends
 --------
 - ``numpy``
+- ``cupy``
 - ``ctf``
 - ``ctfview``
 
