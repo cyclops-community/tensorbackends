@@ -4,7 +4,7 @@ This module implements the cupy backend.
 
 import functools, operator
 
-import cupy as np
+import cupy as cp
 import cupy.linalg as la
 
 from ...interface import Backend
@@ -39,21 +39,21 @@ class CuPyBackend(Backend):
             return obj
         elif isinstance(obj, self.tensor) and dtype is not None:
             return obj.astype(dtype)
-        elif isinstance(obj, np.ndarray) and dtype is None:
+        elif isinstance(obj, cp.ndarray) and dtype is None:
             return self.tensor(obj)
-        elif isinstance(obj, np.ndarray) and dtype is not None:
+        elif isinstance(obj, cp.ndarray) and dtype is not None:
             return self.tensor(obj.astype(dtype))
         else:
-            return self.tensor(np.array(obj, dtype=dtype))
+            return self.tensor(cp.array(obj, dtype=dtype))
 
     def empty(self, shape, dtype=float):
-        return self.tensor(np.empty(shape, dtype=dtype))
+        return self.tensor(cp.empty(shape, dtype=dtype))
 
     def zeros(self, shape, dtype=float):
-        return self.tensor(np.zeros(shape, dtype=dtype))
+        return self.tensor(cp.zeros(shape, dtype=dtype))
 
     def ones(self, shape, dtype=float):
-        return self.tensor(np.ones(shape, dtype=dtype))
+        return self.tensor(cp.ones(shape, dtype=dtype))
 
     def shape(self, a):
         return a.shape
@@ -66,16 +66,16 @@ class CuPyBackend(Backend):
 
     def save(self, tsr, filename):
         with open(filename, 'w+b') as file:
-            np.save(file, tsr.unwrap(), allow_pickle=False)
+            cp.save(file, tsr.unwrap(), allow_pickle=False)
 
     def load(self, filename):
-        return self.tensor(np.load(filename))
+        return self.tensor(cp.load(filename))
 
     def hstack(self, tensors):
-        return self.tensor(np.hstack(tuple(tsr.unwrap() for tsr in tensors)))
+        return self.tensor(cp.hstack(tuple(tsr.unwrap() for tsr in tensors)))
 
     def vstack(self, tensors):
-        return self.tensor(np.vstack(tuple(tsr.unwrap() for tsr in tensors)))
+        return self.tensor(cp.vstack(tuple(tsr.unwrap() for tsr in tensors)))
 
     def einsum(self, subscripts, *operands):
         if not all(isinstance(operand, self.tensor) for operand in operands):
@@ -131,13 +131,13 @@ class CuPyBackend(Backend):
     def isclose(self, a, b, *, rtol=1e-9, atol=0.0):
         a = a.tsr if isinstance(a, CuPyTensor) else a
         b = b.tsr if isinstance(b, CuPyTensor) else b
-        y = np.isclose(a, b, rtol=rtol, atol=atol)
-        return CuPyTensor(y) if isinstance(y, np.ndarray) else y
+        y = cp.isclose(a, b, rtol=rtol, atol=atol)
+        return CuPyTensor(y) if isinstance(y, cp.ndarray) else y
 
     def allclose(self, a, b, *, rtol=1e-9, atol=0.0):
         a = a.tsr if isinstance(a, CuPyTensor) else a
         b = b.tsr if isinstance(b, CuPyTensor) else b
-        return np.allclose(a, b, rtol=rtol, atol=atol)
+        return cp.allclose(a, b, rtol=rtol, atol=atol)
 
     def inv(self, a):
         return CuPyTensor(la.inv(a.unwrap()))
@@ -147,10 +147,10 @@ class CuPyBackend(Backend):
         return CuPyTensor(u), CuPyTensor(s), CuPyTensor(vh)
 
     def __getattr__(self, attr):
-        wrap = lambda val: CuPyTensor(val) if isinstance(val, np.ndarray) else val
+        wrap = lambda val: CuPyTensor(val) if isinstance(val, cp.ndarray) else val
         unwrap = lambda val: val.unwrap() if isinstance(val, CuPyTensor) else val
         try:
-            result = getattr(np, attr) if hasattr(np, attr) else getattr(la, attr)
+            result = getattr(cp, attr) if hasattr(cp, attr) else getattr(la, attr)
         except AttributeError as e:
             raise AttributeError("failed to get '{}' from cupy or cupy.linalg".format(attr)) from e
         if callable(result):
@@ -175,12 +175,12 @@ class CuPyBackend(Backend):
             return result
 
     def _einsum(self, expr, operands):
-        result = np.einsum(expr.indices_string, *(operand.tsr for operand in operands), optimize='greedy')
-        if isinstance(result, np.ndarray) and result.ndim != 0:
+        result = cp.einsum(expr.indices_string, *(operand.tsr for operand in operands), optimize='greedy')
+        if isinstance(result, cp.ndarray) and result.ndim != 0:
             newshape = expr.outputs[0].newshape(result.shape)
             result = result.reshape(*newshape)
             return self.tensor(result)
-        elif isinstance(result, np.ndarray):
+        elif isinstance(result, cp.ndarray):
             return result.item()
         else:
             return result

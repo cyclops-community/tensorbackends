@@ -2,7 +2,7 @@
 This module implements the random module for cupy backend.
 """
 
-import cupy as np
+import cupy as cp
 
 from ...interface import Random
 from .cupy_tensor import CuPyTensor
@@ -10,19 +10,19 @@ from .cupy_tensor import CuPyTensor
 
 class CuPyRandom(Random):
     def seed(self, seed):
-        np.random.seed(seed)
+        cp.random.seed(seed)
 
     def random(self, size):
-        return CuPyTensor(np.random.random(size))
+        return CuPyTensor(cp.random.random(size))
 
     def uniform(self, low=0.0, high=1.0, size=None):
-        return CuPyTensor(np.random.uniform(low, high, size))
+        return CuPyTensor(cp.random.uniform(low, high, size))
 
     def __getattr__(self, attr):
-        wrap = lambda val: CuPyTensor(val) if isinstance(val, np.ndarray) else val
+        wrap = lambda val: CuPyTensor(val) if isinstance(val, cp.ndarray) else val
         unwrap = lambda val: val.unwrap() if isinstance(val, CuPyTensor) else val
         try:
-            result = getattr(np.random, attr)
+            result = getattr(cp.random, attr)
             if callable(result):
                 def wrapped_result(*args, **kwargs):
                     unwrapped_args = tuple(unwrap(v) for v in args)

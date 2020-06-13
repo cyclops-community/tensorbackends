@@ -2,7 +2,7 @@
 This module implements the cupy tensor.
 """
 
-import cupy as np
+import cupy as cp
 
 from ...interface import Tensor
 
@@ -46,13 +46,13 @@ class CuPyTensor(Tensor):
 
     def __getitem__(self, key):
         value = self.tsr[key]
-        return CuPyTensor(value) if isinstance(value, np.ndarray) else value
+        return CuPyTensor(value) if isinstance(value, cp.ndarray) else value
 
     def __setitem__(self, key, value):
         self.tsr[key] = value.unwrap() if isinstance(value, CuPyTensor) else value
 
     def copy(self):
-        return CuPyTensor(np.copy(self.tsr))
+        return CuPyTensor(cp.copy(self.tsr))
 
     def astype(self, dtype):
         return CuPyTensor(self.tsr.astype(dtype))
@@ -61,7 +61,7 @@ class CuPyTensor(Tensor):
         self.tsr.put(inds, vals)
 
     def __getattr__(self, attr):
-        wrap = lambda val: CuPyTensor(val) if isinstance(val, np.ndarray) else val
+        wrap = lambda val: CuPyTensor(val) if isinstance(val, cp.ndarray) else val
         unwrap = lambda val: val.unwrap() if isinstance(val, CuPyTensor) else val
         try:
             result = getattr(self.tsr, attr)
