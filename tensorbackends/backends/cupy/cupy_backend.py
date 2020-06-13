@@ -1,22 +1,22 @@
 """
-This module implements the numpy backend.
+This module implements the cupy backend.
 """
 
 import functools, operator
 
-import numpy as np
-import numpy.linalg as la
+import cupy as np
+import cupy.linalg as la
 
 from ...interface import Backend
 from ...utils import einstr
-from .numpy_random import NumPyRandom
-from .numpy_tensor import NumPyTensor
+from .cupy_random import CuPyRandom
+from .cupy_tensor import CuPyTensor
 
 
-class NumPyBackend(Backend):
+class CuPyBackend(Backend):
     @property
     def name(self):
-        return 'numpy'
+        return 'cupy'
 
     @property
     def nproc(self):
@@ -28,11 +28,11 @@ class NumPyBackend(Backend):
 
     @property
     def random(self):
-        return NumPyRandom()
+        return CuPyRandom()
 
     @property
     def tensor(self):
-        return NumPyTensor
+        return CuPyTensor
 
     def astensor(self, obj, dtype=None):
         if isinstance(obj, self.tensor) and dtype is None:
@@ -129,30 +129,30 @@ class NumPyBackend(Backend):
         return self._einsvd(einsvd_expr, a, svd_func)
 
     def isclose(self, a, b, *, rtol=1e-9, atol=0.0):
-        a = a.tsr if isinstance(a, NumPyTensor) else a
-        b = b.tsr if isinstance(b, NumPyTensor) else b
+        a = a.tsr if isinstance(a, CuPyTensor) else a
+        b = b.tsr if isinstance(b, CuPyTensor) else b
         y = np.isclose(a, b, rtol=rtol, atol=atol)
-        return NumPyTensor(y) if isinstance(y, np.ndarray) else y
+        return CuPyTensor(y) if isinstance(y, np.ndarray) else y
 
     def allclose(self, a, b, *, rtol=1e-9, atol=0.0):
-        a = a.tsr if isinstance(a, NumPyTensor) else a
-        b = b.tsr if isinstance(b, NumPyTensor) else b
+        a = a.tsr if isinstance(a, CuPyTensor) else a
+        b = b.tsr if isinstance(b, CuPyTensor) else b
         return np.allclose(a, b, rtol=rtol, atol=atol)
 
     def inv(self, a):
-        return NumPyTensor(la.inv(a.unwrap()))
+        return CuPyTensor(la.inv(a.unwrap()))
 
     def svd(self, a):
         u, s, vh = la.svd(a.unwrap(), full_matrices=False)
-        return NumPyTensor(u), NumPyTensor(s), NumPyTensor(vh)
+        return CuPyTensor(u), CuPyTensor(s), CuPyTensor(vh)
 
     def __getattr__(self, attr):
-        wrap = lambda val: NumPyTensor(val) if isinstance(val, np.ndarray) else val
-        unwrap = lambda val: val.unwrap() if isinstance(val, NumPyTensor) else val
+        wrap = lambda val: CuPyTensor(val) if isinstance(val, np.ndarray) else val
+        unwrap = lambda val: val.unwrap() if isinstance(val, CuPyTensor) else val
         try:
             result = getattr(np, attr) if hasattr(np, attr) else getattr(la, attr)
         except AttributeError as e:
-            raise AttributeError("failed to get '{}' from numpy or numpy.linalg".format(attr)) from e
+            raise AttributeError("failed to get '{}' from cupy or cupy.linalg".format(attr)) from e
         if callable(result):
             def wrapped_result(*args, **kwargs):
                 unwrapped_args = tuple(unwrap(v) for v in args)

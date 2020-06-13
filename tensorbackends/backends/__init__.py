@@ -49,3 +49,8 @@ def _():
 def _():
     from .ctfview import CTFViewBackend
     return CTFViewBackend()
+
+@register('cupy')
+def _():
+    from .cupy import CuPyBackend
+    return CuPyBackend()
