@@ -158,6 +158,7 @@ class BackendTest(unittest.TestCase):
 
 
     def test_einsumsvd_rand(self, tb):
+        tb.random.seed(42)
         A1 = tb.random.random((2,3)) + tb.random.random((2,3)) * 1j
         A2 = tb.random.random((5,2,3)) + tb.random.random((5,2,3)) * 1j
         A3 = tb.random.random((3,2,3)) + tb.random.random((3,2,3)) * 1j
@@ -171,6 +172,7 @@ class BackendTest(unittest.TestCase):
 
 
     def test_einsumsvd_implicit_rand(self, tb):
+        tb.random.seed(42)
         A1 = tb.random.random((2,3)) + tb.random.random((2,3)) * 1j
         A2 = tb.random.random((5,2,3)) + tb.random.random((5,2,3)) * 1j
         A3 = tb.random.random((3,2,3)) + tb.random.random((3,2,3)) * 1j
