@@ -6,6 +6,7 @@ import functools, operator
 
 import numpy as np
 import numpy.linalg as la
+from opt_einsum import contract
 
 from ...interface import Backend
 from ...utils import einstr
@@ -175,7 +176,7 @@ class NumPyBackend(Backend):
             return result
 
     def _einsum(self, expr, operands):
-        result = np.einsum(expr.indices_string, *(operand.tsr for operand in operands), optimize='greedy')
+        result = contract(expr.indices_string, *(operand.tsr for operand in operands))
         if isinstance(result, np.ndarray) and result.ndim != 0:
             newshape = expr.outputs[0].newshape(result.shape)
             result = result.reshape(*newshape)
