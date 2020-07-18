@@ -200,7 +200,7 @@ add_binary_operators(
     '__imatmul__',
     '__itruediv__',
     '__ifloordiv__',
-    '__ipow__',
+    # '__ipow__', # TODO Add __ipow__ to ctf tensor
 
     '__lt__',
     '__le__',

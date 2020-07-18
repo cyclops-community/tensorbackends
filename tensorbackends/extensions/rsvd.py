@@ -1,5 +1,6 @@
+from ..utils.svd_absorb_s import svd_absorb_s
 
-def rsvd(backend, a, rank, niter, oversamp):
+def rsvd(backend, a, rank, niter, oversamp, absorb_s):
     dtype = a.dtype
     m, n = a.shape
     r = min(rank + oversamp, m, n)
@@ -17,4 +18,5 @@ def rsvd(backend, a, rank, niter, oversamp):
     u = q @ u_sub
     if rank < r:
         u, s, vh = u[:,:rank], s[:rank], vh[:rank,:]
+    u, s, vh = svd_absorb_s(u, s, vh, absorb_s)
     return u, s, vh
