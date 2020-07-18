@@ -9,6 +9,7 @@ import cupy.linalg as la
 
 from ...interface import Backend
 from ...utils import einstr
+from ...utils.svd_absorb_s import svd_absorb_s
 from .cupy_random import CuPyRandom
 from .cupy_tensor import CuPyTensor
 
@@ -84,26 +85,26 @@ class CuPyBackend(Backend):
         expr = einstr.parse_einsum(subscripts, ndims)
         return self._einsum(expr, operands)
 
-    def einsvd_reduced(self, subscripts, a, rank=None):
+    def einsvd_reduced(self, subscripts, a, rank=None, absorb_s=False):
         if not isinstance(a, self.tensor):
             raise TypeError('the input should be {}'.format(self.tensor.__qualname__))
         expr = einstr.parse_einsvd(subscripts, a.ndim)
         def svd_func(matrix):
-            u, s, vh = self.svd(matrix)
+            u, s, vh = self.svd(matrix, absorb_s=absorb_s)
             if rank is not None and s.shape[0] > rank:
                 u, s, vh = u[:,:rank], s[:rank], vh[:rank,:]
             return u, s, vh
         return self._einsvd(expr, a, svd_func)
 
-    def einsvd_rand(self, subscripts, a, rank, niter=1, oversamp=5):
+    def einsvd_rand(self, subscripts, a, rank, niter=1, oversamp=5, absorb_s=False):
         if not isinstance(a, self.tensor):
             raise TypeError('the input should be {}'.format(self.tensor.__qualname__))
         expr = einstr.parse_einsvd(subscripts, a.ndim)
         def svd_func(matrix):
-            return self.rsvd(matrix, rank, niter, oversamp)
+            return self.rsvd(matrix, rank, niter, oversamp, absorb_s=absorb_s)
         return self._einsvd(expr, a, svd_func)
 
-    def einsumsvd_reduced(self, subscripts, *operands, rank=None):
+    def einsumsvd_reduced(self, subscripts, *operands, rank=None, absorb_s=False):
         if not all(isinstance(operand, self.tensor) for operand in operands):
             raise TypeError('all operands should be {}'.format(self.tensor.__qualname__))
         ndims = [operand.ndim for operand in operands]
@@ -111,13 +112,13 @@ class CuPyBackend(Backend):
         einsum_expr, einsvd_expr = einstr.split_einsumsvd(expr)
         a = self._einsum(einsum_expr, operands)
         def svd_func(matrix):
-            u, s, vh = self.svd(matrix)
+            u, s, vh = self.svd(matrix, absorb_s=absorb_s)
             if rank is not None and s.shape[0] > rank:
                 u, s, vh = u[:,:rank], s[:rank], vh[:rank,:]
             return u, s, vh
         return self._einsvd(einsvd_expr, a, svd_func)
 
-    def einsumsvd_rand(self, subscripts, *operands, rank, niter=1, oversamp=5):
+    def einsumsvd_rand(self, subscripts, *operands, rank, niter=1, oversamp=5, absorb_s=False):
         if not all(isinstance(operand, self.tensor) for operand in operands):
             raise TypeError('all operands should be {}'.format(self.tensor.__qualname__))
         ndims = [operand.ndim for operand in operands]
@@ -125,7 +126,7 @@ class CuPyBackend(Backend):
         einsum_expr, einsvd_expr = einstr.split_einsumsvd(expr)
         a = self._einsum(einsum_expr, operands)
         def svd_func(matrix):
-            return self.rsvd(matrix, rank, niter, oversamp)
+            return self.rsvd(matrix, rank, niter, oversamp, absorb_s=absorb_s)
         return self._einsvd(einsvd_expr, a, svd_func)
 
     def isclose(self, a, b, *, rtol=1e-9, atol=0.0):
@@ -142,9 +143,11 @@ class CuPyBackend(Backend):
     def inv(self, a):
         return CuPyTensor(la.inv(a.unwrap()))
 
-    def svd(self, a):
+    def svd(self, a, absorb_s=False):
         u, s, vh = la.svd(a.unwrap(), full_matrices=False)
-        return CuPyTensor(u), CuPyTensor(s), CuPyTensor(vh)
+        u, s, vh = self.tensor(u), self.tensor(s), self.tensor(vh)
+        u, s, vh = svd_absorb_s(u, s, vh, absorb_s)
+        return u, s, vh
 
     def __getattr__(self, attr):
         wrap = lambda val: CuPyTensor(val) if isinstance(val, cp.ndarray) else val

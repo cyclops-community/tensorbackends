@@ -7,6 +7,7 @@ import numpy as np
 
 from ...interface import Backend
 from ...utils import einstr
+from ...utils.svd_absorb_s import svd_absorb_s
 from .ctfview_random import CTFViewRandom
 from .ctfview_tensor import CTFViewTensor
 from . import indices_utils
@@ -91,26 +92,26 @@ class CTFViewBackend(Backend):
         expr = einstr.parse_einsum(subscripts, ndims)
         return self._einsum(expr, operands)
 
-    def einsvd_reduced(self, subscripts, a, rank=None):
+    def einsvd_reduced(self, subscripts, a, rank=None, absorb_s=False):
         if not isinstance(a, self.tensor):
             raise TypeError('the input should be {}'.format(self.tensor.__qualname__))
         expr = einstr.parse_einsvd(subscripts, a.ndim)
         def svd_func(matrix):
-            u, s, vh = self.svd(matrix)
+            u, s, vh = self.svd(matrix, absorb_s=absorb_s)
             if rank is not None and s.shape[0] > rank:
                 u, s, vh = u[:,:rank], s[:rank], vh[:rank,:]
             return u, s, vh
         return self._einsvd(expr, a, svd_func)
 
-    def einsvd_rand(self, subscripts, a, rank, niter=1, oversamp=5):
+    def einsvd_rand(self, subscripts, a, rank, niter=1, oversamp=5, absorb_s=False):
         if not isinstance(a, self.tensor):
             raise TypeError('the input should be {}'.format(self.tensor.__qualname__))
         expr = einstr.parse_einsvd(subscripts, a.ndim)
         def svd_func(matrix):
-            return self.rsvd(matrix, rank, niter, oversamp)
+            return self.rsvd(matrix, rank, niter, oversamp, absorb_s=absorb_s)
         return self._einsvd(expr, a, svd_func)
 
-    def einsumsvd_reduced(self, subscripts, *operands, rank=None):
+    def einsumsvd_reduced(self, subscripts, *operands, rank=None, absorb_s=False):
         if not all(isinstance(operand, self.tensor) for operand in operands):
             raise TypeError('all operands should be {}'.format(self.tensor.__qualname__))
         ndims = [operand.ndim for operand in operands]
@@ -118,13 +119,13 @@ class CTFViewBackend(Backend):
         einsum_expr, einsvd_expr = einstr.split_einsumsvd(expr)
         a = self._einsum(einsum_expr, operands)
         def svd_func(matrix):
-            u, s, vh = self.svd(matrix)
+            u, s, vh = self.svd(matrix, absorb_s=absorb_s)
             if rank is not None and s.shape[0] > rank:
                 u, s, vh = u[:,:rank], s[:rank], vh[:rank,:]
             return u, s, vh
         return self._einsvd(einsvd_expr, a, svd_func)
 
-    def einsumsvd_rand(self, subscripts, *operands, rank, niter=1, oversamp=5):
+    def einsumsvd_rand(self, subscripts, *operands, rank, niter=1, oversamp=5, absorb_s=False):
         if not all(isinstance(operand, self.tensor) for operand in operands):
             raise TypeError('all operands should be {}'.format(self.tensor.__qualname__))
         ndims = [operand.ndim for operand in operands]
@@ -132,7 +133,7 @@ class CTFViewBackend(Backend):
         einsum_expr, einsvd_expr = einstr.split_einsumsvd(expr)
         a = self._einsum(einsum_expr, operands)
         def svd_func(matrix):
-            return self.rsvd(matrix, rank, niter, oversamp)
+            return self.rsvd(matrix, rank, niter, oversamp, absorb_s=absorb_s)
         return self._einsvd(einsvd_expr, a, svd_func)
 
     def isclose(self, a, b, *, rtol=1e-9, atol=0.0):
@@ -147,13 +148,15 @@ class CTFViewBackend(Backend):
         u, s, v = self.einsvd('ij->ia,ja', a)
         return self.einsum('ia,a,ja->ji', u, 1/s, v)
 
-    def svd(self, a):
+    def svd(self, a, absorb_s=False):
         if not isinstance(a, self.tensor):
             raise TypeError('the input should be {}'.format(self.tensor.__qualname__))
         if a.ndim != 2:
             raise TypeError('the input tensor should be a matrix')
         u, s, vh = ctf.svd(a.unwrap())
-        return self.tensor(u), self.tensor(ctf.real(s)), self.tensor(vh)
+        u, s, vh = self.tensor(u), self.tensor(ctf.real(s)), self.tensor(vh)
+        u, s, vh = svd_absorb_s(u, s, vh, absorb_s)
+        return u, s, vh
 
     def __getattr__(self, attr):
         wrap = lambda val: CTFViewTensor(val) if isinstance(val, ctf.tensor) else val

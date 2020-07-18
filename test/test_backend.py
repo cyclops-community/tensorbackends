@@ -157,6 +157,28 @@ class BackendTest(unittest.TestCase):
                 self.assertTrue(tb.allclose(usv, low_rank, atol=1e-9))
 
 
+    def test_einsumsvd_absorb_s(self, tb):
+        from tensorbackends.interface import ReducedSVD, RandomizedSVD, ImplicitRandomizedSVD
+        a = tb.astensor([[0,2e-3j,0,0],[1e-3,0,0,0],[0,0,3,0],[0,0,0,4j]], dtype=complex)
+        p = tb.astensor([[0,1,0,0],[1,0,0,0],[0,0,1,0],[0,0,0,1]], dtype=complex)
+        s_true = tb.astensor([4,3])
+        low_rank = tb.astensor([[0,0,0,0],[0,0,0,0],[0,0,3,0],[0,0,0,4j]], dtype=complex)
+        options = [
+            ReducedSVD(rank=2),
+            RandomizedSVD(rank=2, niter=2, oversamp=1),
+            ImplicitRandomizedSVD(rank=2, niter=2, orth_method='qr'),
+            ImplicitRandomizedSVD(rank=2, niter=2, orth_method='local_gram'),
+        ]
+        for option in options:
+            for absorb_s in ['even', 'u', 'v']:
+                with self.subTest(option=option):
+                    u, _, v = tb.einsumsvd('ij,jk->is,sk', p, a, option=option, absorb_s=absorb_s)
+                    usv = tb.einsum('is,sk->ik', u, v)
+                    self.assertEqual(u.shape, (4,2))
+                    self.assertEqual(v.shape, (2,4))
+                    self.assertTrue(tb.allclose(usv, low_rank, atol=1e-9))
+
+
     def test_einsumsvd_rand(self, tb):
         tb.random.seed(42)
         A1 = tb.random.random((2,3)) + tb.random.random((2,3)) * 1j

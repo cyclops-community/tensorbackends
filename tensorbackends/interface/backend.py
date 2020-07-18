@@ -72,41 +72,41 @@ class Backend:
     def einsum(self, subscripts, *operands):
         raise NotImplementedError()
 
-    def einsvd(self, subscripts, a, option=options.ReducedSVD()):
+    def einsvd(self, subscripts, a, option=options.ReducedSVD(), absorb_s=False):
         if isinstance(option, options.ReducedSVD):
-            return self.einsvd_reduced(subscripts, a, option.rank)
+            return self.einsvd_reduced(subscripts, a, option.rank, absorb_s)
         elif isinstance(option, options.RandomizedSVD):
-            return self.einsvd_rand(subscripts, a, option.rank, option.niter, option.oversamp)
+            return self.einsvd_rand(subscripts, a, option.rank, option.niter, option.oversamp, absorb_s)
         else:
             raise ValueError('{} is not a valid option for einsvd'.format(type(option).__qualname__))
 
-    def einsvd_reduced(self, subscripts, a, rank=None):
+    def einsvd_reduced(self, subscripts, a, rank=None, absorb_s=False):
         raise NotImplementedError()
 
-    def einsvd_rand(self, subscripts, a, rank, niter=1, oversamp=5):
+    def einsvd_rand(self, subscripts, a, rank, niter=1, oversamp=5, absorb_s=False):
         raise NotImplementedError()
 
     def einqr(self, subscripts, a):
         return extensions.einqr(self, subscripts, a)
 
-    def einsumsvd(self, subscripts, *operands, option=options.ReducedSVD()):
+    def einsumsvd(self, subscripts, *operands, option=options.ReducedSVD(), absorb_s=False):
         if isinstance(option, options.ReducedSVD):
-            return self.einsumsvd_reduced(subscripts, *operands, rank=option.rank)
+            return self.einsumsvd_reduced(subscripts, *operands, rank=option.rank, absorb_s=absorb_s)
         elif isinstance(option, options.RandomizedSVD):
-            return self.einsumsvd_rand(subscripts, *operands, rank=option.rank, niter=option.niter, oversamp=option.oversamp)
+            return self.einsumsvd_rand(subscripts, *operands, rank=option.rank, niter=option.niter, oversamp=option.oversamp, absorb_s=absorb_s)
         elif isinstance(option, options.ImplicitRandomizedSVD):
-            return self.einsumsvd_implicit_rand(subscripts, *operands, rank=option.rank, niter=option.niter, orth_method=option.orth_method)
+            return self.einsumsvd_implicit_rand(subscripts, *operands, rank=option.rank, niter=option.niter, orth_method=option.orth_method, absorb_s=absorb_s)
         else:
             raise ValueError('{} is not a valid option for einsumsvd'.format(type(option).__qualname__))
 
-    def einsumsvd_reduced(self, subscripts, *operands, rank=None):
+    def einsumsvd_reduced(self, subscripts, *operands, rank=None, absorb_s=False):
         raise NotImplementedError()
 
-    def einsumsvd_rand(self, subscripts, *operands, rank, niter=1, oversamp=5):
+    def einsumsvd_rand(self, subscripts, *operands, rank, niter=1, oversamp=5, absorb_s=False):
         raise NotImplementedError()
 
-    def einsumsvd_implicit_rand(self, subscripts, *operands, rank, niter=1, orth_method='qr'):
-        return extensions.einsumsvd_implicit_rand(self, subscripts, *operands, rank=rank, niter=niter, orth_method=orth_method)
+    def einsumsvd_implicit_rand(self, subscripts, *operands, rank, niter=1, orth_method='qr', absorb_s=False):
+        return extensions.einsumsvd_implicit_rand(self, subscripts, *operands, rank=rank, niter=niter, orth_method=orth_method, absorb_s=absorb_s)
 
     def isclose(self, a, b, *, rtol=1e-9, atol=0.0):
         raise NotImplementedError()
@@ -117,8 +117,8 @@ class Backend:
     def inv(self, a):
         raise NotImplementedError()
 
-    def svd(self, a):
+    def svd(self, a, absorb_s=False):
         raise NotImplementedError()
 
-    def rsvd(self, a, rank, niter=1, oversamp=5):
-        return extensions.rsvd(self, a, rank, niter, oversamp)
+    def rsvd(self, a, rank, niter=1, oversamp=5, absorb_s=False):
+        return extensions.rsvd(self, a, rank, niter, oversamp, absorb_s)

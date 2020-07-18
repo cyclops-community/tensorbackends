@@ -4,7 +4,7 @@ import numpy as np
 import scipy.linalg as la
 
 
-def einsumsvd_implicit_rand(backend, subscripts, *operands, rank, niter, orth_method):
+def einsumsvd_implicit_rand(backend, subscripts, *operands, rank, niter, orth_method, absorb_s):
     if orth_method == 'qr':
         orthogonalize = orthogonalize_qr
     elif orth_method == 'local_gram':
@@ -74,7 +74,7 @@ def einsumsvd_implicit_rand(backend, subscripts, *operands, rank, niter, orth_me
     op_YT = orthogonalize(backend, op_YT)
 
     op_X = apply_A(backend,expr_A,ops_A,term_YT,op_YT,term_X)
-    mat_U, S, mat_XVT = backend.svd(op_X.reshape(np.prod(op_X.shape)//r, r))
+    mat_U, S, mat_XVT = backend.svd(op_X.reshape(np.prod(op_X.shape)//r, r), absorb_s=absorb_s)
     op_YT = backend.tensordot(op_YT.conj(), mat_XVT, axes=((-1),(-1)))
     op_X = mat_U.reshape(*op_X.shape)
     U = op_X
