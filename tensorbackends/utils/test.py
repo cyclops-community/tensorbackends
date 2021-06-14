@@ -15,7 +15,7 @@ def test_with_backend(required=['numpy'], optional=['ctf', 'ctfview', 'cupy']):
             return method(self, tb)
         new_method.__name__ = new_name
         return new_name, new_method
-    def decrator(cls):
+    def decorator(cls):
         test_methods = [
             (name, method)
             for name, method in inspect.getmembers(cls, inspect.isfunction)
@@ -32,4 +32,4 @@ def test_with_backend(required=['numpy'], optional=['ctf', 'ctfview', 'cupy']):
                     new_method = unittest.skip('Backend {} is not availabe'.format(tb_name))(new_method)
                 setattr(cls, new_name, new_method)
         return cls
-    return decrator
+    return decorator

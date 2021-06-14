@@ -5,7 +5,7 @@ This module implements the numpy backend.
 import functools, operator
 
 import numpy as np
-import numpy.linalg as la
+import scipy.linalg as la
 from opt_einsum import contract
 
 from ...interface import Backend
@@ -150,13 +150,17 @@ class NumPyBackend(Backend):
         u, s, vh = svd_absorb_s(u, s, vh, absorb_s)
         return u, s, vh
 
+    def qr(self, a, overwrite_a=False, lwork=None, mode='economic', pivoting=False, check_finite=True):
+        q, r = la.qr(a.unwrap(), overwrite_a, lwork, mode, pivoting, check_finite)
+        return NumPyTensor(q), NumPyTensor(r)
+
     def __getattr__(self, attr):
         wrap = lambda val: NumPyTensor(val) if isinstance(val, np.ndarray) else val
         unwrap = lambda val: val.unwrap() if isinstance(val, NumPyTensor) else val
         try:
             result = getattr(np, attr) if hasattr(np, attr) else getattr(la, attr)
         except AttributeError as e:
-            raise AttributeError("failed to get '{}' from numpy or numpy.linalg".format(attr)) from e
+            raise AttributeError("failed to get '{}' from numpy or scipy.linalg".format(attr)) from e
         if callable(result):
             def wrapped_result(*args, **kwargs):
                 unwrapped_args = tuple(unwrap(v) for v in args)
